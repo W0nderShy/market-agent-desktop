@@ -1,0 +1,330 @@
+diff --git a/.agents/notes/implemented/feature/2026-09-09-market-development-homepage.md b/.agents/notes/implemented/feature/2026-09-09-market-development-homepage.md
+new file mode 100644
+index 0000000000..d2cf14c67b
+--- /dev/null
++++ b/.agents/notes/implemented/feature/2026-09-09-market-development-homepage.md
+@@ -0,0 +1,19 @@
++# Agent Note: Market development homepage
++
++Status: implemented
++
++## Problem
++
++Market monitoring needs to occupy the dsh primary desktop window while retaining access to dsh conversations. A separate companion window does not satisfy that workflow.
++
++## Decision
++
++An unpackaged Desktop shell uses the explicitly configured Market Agent checkout for four allowlisted static assets. Its main window defaults to the market page. An isolated preload offers named API operations; main-process sender and frame checks guard a fixed loopback service with a token loaded outside the renderer. Application menu actions switch the same window between market and conversation pages. Packaged shells ignore the development override.
++
++## Alternatives considered
++
++**Separate Electron companion:** rejected because monitoring must be the primary dsh page. **A general renderer HTTP proxy:** rejected because the UI needs only five named operations and no token access.
++
++## Consequences
++
++The dsh agent and conversation implementation stays intact, while release packaging must explicitly include the market assets and backend. The patch is maintained against the pinned upstream revision. Focused tests reject unknown files, foreign webContents, child frames and invalid operation payloads; the Desktop TypeScript and shell build validate integration.
+diff --git a/.agents/notes/implemented/feature/2026-09-09-market-development-homepage.zh.md b/.agents/notes/implemented/feature/2026-09-09-market-development-homepage.zh.md
+new file mode 100644
+index 0000000000..07f30110e8
+--- /dev/null
++++ b/.agents/notes/implemented/feature/2026-09-09-market-development-homepage.zh.md
+@@ -0,0 +1,19 @@
++# Agent Note: 行情开发主页
++
++Status: implemented
++
++## Problem
++
++行情监控需要占据 dsh 桌面主窗口，同时保留原版对话入口。独立伴随窗口无法满足这一使用方式。
++
++## Decision
++
++未打包客户端通过明确配置的项目目录读取四个允许的静态文件，以行情页作为默认主页。隔离 preload 仅提供命名操作，主进程验证发送者和顶层 frame 后，读取渲染层不可见的令牌，访问固定本地端口。应用菜单在同一窗口切换行情与对话。打包客户端忽略开发覆盖配置。
++
++## Alternatives considered
++
++**独立 Electron 窗口：** 无法满足行情作为 dsh 主页面的要求。**通用 HTTP 代理：** 页面只需五个固定操作，不需要任意网络访问和令牌读取能力。
++
++## Consequences
++
++dsh agent 和对话实现保持原有行为，正式发布需另行集成行情服务及页面资源。补丁固定上游版本维护。针对性测试覆盖资源白名单、发送者与子 frame 拒绝、操作参数验证，Desktop 类型检查和构建验证集成。
+diff --git a/apps/desktop/README.md b/apps/desktop/README.md
+index cf350a9d5e..6d6ee8687d 100644
+--- a/apps/desktop/README.md
++++ b/apps/desktop/README.md
+@@ -174,6 +174,8 @@ Electron-builder always emits generic-provider channel metadata for the deployme
+ 
+ ## Known limitations
+ 
++An unpackaged shell with `DSH_MARKET_ROOT` set to a local Market Agent checkout opens its `desktop/index.html` as the primary window. The Application menu switches between the market homepage and the normal dsh conversation. Only `index.html`, `style.css`, `renderer.js`, and `chart.js` are served from that checkout. The isolated preload exposes named monitor operations only on the main market page; Electron validates sender identity and top-level frame before reading `runtime/api-token` and contacting fixed loopback port 8765. Renderer code never receives the token. Packaged applications ignore this override; packaging the market service and assets requires separate release integration. The focused `apps/desktop/tests/market-home.spec.ts` suite checks the file allowlist, frame ownership and API input validation.
++
+ - The Web "Open In..." action is disabled in Desktop because its host plugin requires HTTP routes; Desktop does not provide a `webServer`.
+ - Release signing, notarization, update hosting, and previous-version installed-artifact qualification require the production release environment.
+ - Desktop plugins with dependency lifecycle scripts are rejected unless their package appears in the desktop project's reviewed `allowBuilds` policy.
+diff --git a/apps/desktop/README.zh.md b/apps/desktop/README.zh.md
+index df48eb5903..ba6a66a898 100644
+--- a/apps/desktop/README.zh.md
++++ b/apps/desktop/README.zh.md
+@@ -1,5 +1,7 @@
+ # DeepSeek Harness 桌面端
+ 
++未打包客户端设置 `DSH_MARKET_ROOT` 为本地 Market Agent 项目后，主窗口默认打开该项目的 `desktop/index.html`。应用菜单可切换行情主页和原版 dsh 对话。只允许读取 `index.html`、`style.css`、`renderer.js`、`chart.js`；主进程验证主窗口顶层 frame，读取本地 `runtime/api-token` 后请求固定的 8765 端口，渲染页面不会获得令牌。打包客户端忽略这个开发配置；正式打包仍需整合行情服务和页面资源。此扩展不改变 dsh 会话或 agent 循环。
++
+ [English](README.md) | 中文
+ 
+ 桌面应用是包裹 dsh Web UI 的 Electron 壳。它不打开监听端口：内置的上游 Node.js 子进程启动已安装的 dsh 项目，带版本的分帧字节管道在没有外层 Base64 信封的情况下承载 Fetch 请求与流式响应，Node IPC 承载生命周期控制，`dsh-app://` 则提供与后端版本匹配的客户端资源。
+diff --git a/apps/desktop/src/locale.ts b/apps/desktop/src/locale.ts
+index b666cfd559..4d9c14be2e 100644
+--- a/apps/desktop/src/locale.ts
++++ b/apps/desktop/src/locale.ts
+@@ -2,6 +2,9 @@
+ 
+ export const en = {
+   application: 'Application',
++  marketHome: 'Market Overview',
++  marketConversation: 'dsh Conversation',
++  marketUnavailable: 'Market service is unavailable or the request timed out.',
+   startupFailed: 'DeepSeek Harness could not start',
+   pluginsMenu: 'Desktop Plugins…',
+   pluginsMenuPackagedOnly: 'Desktop Plugins… (available in packaged applications)',
+@@ -41,6 +44,9 @@ export type DesktopMessages = { readonly [Key in keyof typeof en]: string }
+ 
+ export const zh = {
+   application: '应用',
++  marketHome: '行情主页面',
++  marketConversation: 'dsh 对话',
++  marketUnavailable: '监控服务未连接或请求超时，请检查服务状态。',
+   startupFailed: 'DeepSeek Harness 无法启动',
+   pluginsMenu: '桌面插件…',
+   pluginsMenuPackagedOnly: '桌面插件…（打包应用中可用）',
+diff --git a/apps/desktop/src/main.ts b/apps/desktop/src/main.ts
+index 8bc9fdcefd..44da070d5f 100644
+--- a/apps/desktop/src/main.ts
++++ b/apps/desktop/src/main.ts
+@@ -19,6 +19,7 @@ import { DESKTOP_IPC, type DesktopUpdateState } from './ipc.ts'
+ import { formatDesktopMessage, resolveDesktopLocale } from './locale.ts'
+ import { claimDesktopSingleInstance } from './single-instance.ts'
+ import { DesktopUpdateCoordinator } from './update-coordinator.ts'
++import { assertMarketSender, marketAsset, marketRequest } from './market-home.ts'
+ 
+ const SCHEME = 'dsh-app'
+ let focusPrimaryWindow = (): void => {}
+@@ -134,6 +135,8 @@ async function main(): Promise<void> {
+   const resources = runtimeResources()
+   const paths = resolveDesktopPaths()
+   const development = developmentProject()
++  const marketRoot = !app.isPackaged && process.env.DSH_MARKET_ROOT ? resolve(process.env.DSH_MARKET_ROOT) : undefined
++  const homePage = marketRoot === undefined ? `${SCHEME}://app/index.html` : `${SCHEME}://market/index.html`
+   const activeProject = development ?? paths.profile
+   const hostInspectPort = developmentHostInspectPort(development !== undefined)
+   const manager = new DesktopProjectManager(paths, resources)
+@@ -223,6 +226,18 @@ async function main(): Promise<void> {
+ 
+   protocol.handle(SCHEME, (request) => {
+     const url = new URL(request.url)
++    if (url.hostname === 'market' && marketRoot !== undefined) {
++      if (request.method !== 'GET' && request.method !== 'HEAD') return Promise.resolve(new Response(null, { status: 405 }))
++      const asset = marketAsset(request.url)
++      if (asset === undefined) return Promise.resolve(new Response(null, { status: 404 }))
++      return readFile(join(marketRoot, 'desktop', asset)).then(body => new Response(request.method === 'HEAD' ? null : body, {
++        headers: {
++          'content-type': MIME[extname(asset)] ?? 'application/octet-stream',
++          'content-security-policy': "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'none'; img-src 'self' data:; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'",
++          'x-content-type-options': 'nosniff',
++        },
++      }), () => new Response(null, { status: 404 }))
++    }
+     if (url.hostname === 'shell') return serveShellAsset(request)
+     if (url.hostname !== 'app') return Promise.resolve(new Response(null, { status: 404 }))
+     const active = host
+@@ -242,6 +257,30 @@ async function main(): Promise<void> {
+     assertDesktopSender(event, ['shell'])
+     return locale
+   })
++  ipcMain.handle('market:request', async (event, action: unknown, payload: unknown) => {
++    assertMarketSender(event, mainWindow?.webContents)
++    if (marketRoot === undefined) throw new Error('market desktop: disabled')
++    if (action === 'conversation') {
++      await mainWindow?.loadURL(`${SCHEME}://app/index.html`)
++      return { ok: true }
++    }
++    const spec = marketRequest(action, payload)
++    try {
++      const token = (await readFile(join(marketRoot, 'runtime', 'api-token'), 'utf8')).trim()
++      const response = await fetch(`http://127.0.0.1:8765${spec.path}`, {
++        method: spec.method,
++        headers: { 'X-Monitor-Token': token, 'Content-Type': 'application/json' },
++        ...(spec.body === undefined ? {} : { body: JSON.stringify(spec.body) }),
++        signal: AbortSignal.timeout(30_000),
++        redirect: 'error',
++      })
++      const data: unknown = await response.json()
++      if (!response.ok) return { ok: false, error: messages.marketUnavailable }
++      return { ok: true, data }
++    } catch {
++      return { ok: false, error: messages.marketUnavailable }
++    }
++  })
+   ipcMain.handle(DESKTOP_IPC.pluginsList, (event) => {
+     assertDesktopSender(event, ['shell'])
+     if (development !== undefined) return []
+@@ -328,6 +367,8 @@ async function main(): Promise<void> {
+   Menu.setApplicationMenu(Menu.buildFromTemplate([{
+     label: process.platform === 'darwin' ? app.name : messages.application,
+     submenu: [
++      { label: messages.marketHome, visible: marketRoot !== undefined, click: () => { void mainWindow?.loadURL(homePage) } },
++      { label: messages.marketConversation, visible: marketRoot !== undefined, click: () => { void mainWindow?.loadURL(`${SCHEME}://app/index.html`) } },
+       {
+         label: development === undefined ? messages.pluginsMenu : messages.pluginsMenuPackagedOnly,
+         accelerator: 'CmdOrCtrl+,',
+@@ -351,7 +392,7 @@ async function main(): Promise<void> {
+     const window = mainWindow
+     if (window === undefined || window.isDestroyed()) {
+       const replacement = createMainWindow()
+-      void replacement.loadURL(`${SCHEME}://app/index.html`)
++      void replacement.loadURL(homePage)
+       return
+     }
+     if (window.isMinimized()) window.restore()
+@@ -360,7 +401,7 @@ async function main(): Promise<void> {
+   }
+ 
+   mainWindow = createMainWindow()
+-  await mainWindow.loadURL(`${SCHEME}://app/index.html`)
++  await mainWindow.loadURL(homePage)
+   if (development !== undefined && process.env.DSH_DESKTOP_OPEN_DEVTOOLS !== '0') {
+     mainWindow.webContents.openDevTools({ mode: 'detach' })
+   }
+diff --git a/apps/desktop/src/market-home.ts b/apps/desktop/src/market-home.ts
+new file mode 100644
+index 0000000000..41218ebb60
+--- /dev/null
++++ b/apps/desktop/src/market-home.ts
+@@ -0,0 +1,75 @@
++/** Development market homepage: fixed asset and loopback API allowlists. */
++
++const PAGE = 'dsh-app://market/index.html'
++const ASSETS = new Set(['index.html', 'style.css', 'renderer.js', 'chart.js'])
++const CATEGORIES = new Set(['SPOT', 'USDT-FUTURES', 'USDC-FUTURES', 'COIN-FUTURES'])
++
++/** Resolve an owned asset; arbitrary files and other origins have no mapping.
++ * @param address Custom-protocol request URL.
++ * @returns An allowlisted basename, or undefined.
++ */
++export function marketAsset(address: string): string | undefined {
++  const url = new URL(address)
++  if (url.protocol !== 'dsh-app:' || url.hostname !== 'market' || url.port || url.username || url.password) return undefined
++  const name = url.pathname.slice(1)
++  return ASSETS.has(name) ? name : undefined
++}
++
++/** Reject IPC outside the main market frame.
++ * @param event Sender identity supplied by Electron.
++ * @param owner Main window's webContents.
++ */
++export function assertMarketSender(
++  event: { sender: unknown; senderFrame: { url: string } | null },
++  owner: { mainFrame: unknown } | undefined,
++): void {
++  if (!owner || event.sender !== owner || event.senderFrame !== owner.mainFrame || event.senderFrame?.url !== PAGE) {
++    throw new Error('market desktop: unauthorized frame')
++  }
++}
++
++interface RequestSpec {
++  method: 'GET' | 'POST' | 'PUT'
++  path: string
++  body?: { items: { symbol: string; category: string }[] }
++}
++
++function object(value: unknown): Record<string, unknown> {
++  if (typeof value !== 'object' || value === null || Array.isArray(value)) throw new Error('market desktop: invalid payload')
++  return value as Record<string, unknown>
++}
++
++function instrument(value: unknown, allowEmpty = false): { category: string; symbol: string } {
++  const data = object(value)
++  const category = data.category ?? 'SPOT'
++  const symbol = data.symbol ?? ''
++  if (typeof category !== 'string' || !CATEGORIES.has(category)
++    || typeof symbol !== 'string' || !(allowEmpty ? /^[A-Z0-9]{0,40}$/u : /^[A-Z0-9]{1,40}$/u).test(symbol)) {
++    throw new Error('market desktop: invalid instrument')
++  }
++  return { category, symbol }
++}
++
++/** Map validated renderer operations to a fixed loopback API route.
++ * @param action Allowlisted operation name.
++ * @param payload Untrusted structured renderer data.
++ * @returns Fixed method, route and optional reduced watchlist body.
++ */
++export function marketRequest(action: unknown, payload?: unknown): RequestSpec {
++  if (action === 'status') return { method: 'GET', path: '/api/status' }
++  if (action === 'poll') return { method: 'POST', path: '/api/poll' }
++  if (action === 'instruments') return { method: 'GET', path: `/api/instruments?${new URLSearchParams(instrument(payload ?? {}, true))}` }
++  if (action === 'candles') {
++    const data = object(payload)
++    const selected = instrument(data)
++    const interval = data.interval ?? '1m'
++    if (typeof interval !== 'string' || !/^(1m|5m|15m|1H|4H|1D)$/u.test(interval)) throw new Error('market desktop: invalid candles')
++    return { method: 'GET', path: `/api/candles?${new URLSearchParams({ ...selected, interval })}` }
++  }
++  if (action === 'watchlist') {
++    const data = object(payload)
++    if (!Array.isArray(data.items) || data.items.length > 50) throw new Error('market desktop: invalid watchlist')
++    return { method: 'PUT', path: '/api/watchlist', body: { items: data.items.map(item => instrument(item)) } }
++  }
++  throw new Error('market desktop: unsupported operation')
++}
+diff --git a/apps/desktop/src/preload-app.ts b/apps/desktop/src/preload-app.ts
+index c6a839aba6..41bb13b2e4 100644
+--- a/apps/desktop/src/preload-app.ts
++++ b/apps/desktop/src/preload-app.ts
+@@ -1,5 +1,10 @@
+ /** Minimal marker that selects the desktop custom-protocol API carrier. */
+ 
+-import { contextBridge } from 'electron'
++import { contextBridge, ipcRenderer } from 'electron'
+ 
+ contextBridge.exposeInMainWorld('dshDesktop', { protocolVersion: 1 })
++if (location.href === 'dsh-app://market/index.html') {
++  contextBridge.exposeInMainWorld('monitor', Object.freeze({
++    request: (action: unknown, payload?: unknown): Promise<unknown> => ipcRenderer.invoke('market:request', action, payload),
++  }))
++}
+diff --git a/apps/desktop/tests/market-home.spec.ts b/apps/desktop/tests/market-home.spec.ts
+new file mode 100644
+index 0000000000..bc079a53fb
+--- /dev/null
++++ b/apps/desktop/tests/market-home.spec.ts
+@@ -0,0 +1,30 @@
++import { describe, expect, it } from 'vitest'
++import { assertMarketSender, marketAsset, marketRequest } from '../src/market-home.ts'
++
++describe('market home restrictions', () => {
++  it('serves only the four owned assets', () => {
++    expect(marketAsset('dsh-app://market/index.html')).toBe('index.html')
++    for (const url of ['dsh-app://market/api-token', 'dsh-app://app/index.html', 'dsh-app://market/%2e%2e%2fapi-token', 'https://market/index.html']) {
++      expect(marketAsset(url)).toBeUndefined()
++    }
++  })
++  it('requires the owned main webContents and its top-level exact page', () => {
++    const frame = { url: 'dsh-app://market/index.html' }
++    const owner = { mainFrame: frame }
++    expect(() => assertMarketSender({ sender: owner, senderFrame: frame }, owner)).not.toThrow()
++    expect(() => assertMarketSender({ sender: {}, senderFrame: frame }, owner)).toThrow()
++    expect(() => assertMarketSender({ sender: owner, senderFrame: { ...frame } }, owner)).toThrow()
++    frame.url = 'dsh-app://app/index.html'
++    expect(() => assertMarketSender({ sender: owner, senderFrame: frame }, owner)).toThrow()
++  })
++  it('limits API requests to supported actions and validates inputs', () => {
++    expect(marketRequest('status')).toEqual({ method: 'GET', path: '/api/status' })
++    expect(marketRequest('poll')).toEqual({ method: 'POST', path: '/api/poll' })
++    expect(marketRequest('candles', { category: 'SPOT', symbol: 'BTCUSDT', interval: '1H' }).path).toContain('/api/candles?category=SPOT&symbol=BTCUSDT&interval=1H')
++    expect(marketRequest('watchlist', { items: [{ symbol: 'BTCUSDT', category: 'SPOT', token: 'ignored' }] }).body).toEqual({ items: [{ symbol: 'BTCUSDT', category: 'SPOT' }] })
++    for (const action of ['http://evil.test', '/api/secrets', 'delete', '__proto__']) expect(() => marketRequest(action)).toThrow()
++    expect(() => marketRequest('watchlist', { items: Array(51).fill({}) })).toThrow()
++    expect(() => marketRequest('instruments', { symbol: '../private' })).toThrow()
++    expect(() => marketRequest('candles', { symbol: 'BTCUSDT', interval: '../secret' })).toThrow()
++  })
++})

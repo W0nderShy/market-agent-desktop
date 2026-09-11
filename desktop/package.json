@@ -1,0 +1,8 @@
+{
+  "name": "market-monitor-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local market monitor companion for source-built dsh Desktop",
+  "main": "main.cjs",
+  "scripts": {"test": "node --test policy.test.cjs"}
+}

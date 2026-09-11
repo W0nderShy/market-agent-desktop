@@ -1,7 +1,44 @@
+# Credentials: templates must contain placeholders only.
 .env
 .env.*
 !.env.example
-runtime/
-config/private/
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Personal configuration and runtime state.
+/config/private/
+/runtime/
+/data/
+/logs/
+/reports/
+/.dsh/
+/.dsh-home/
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+*.log
+
+# Dependencies and build/test output.
 .venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
 node_modules/
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+coverage/
+
+# Editor and OS files.
+.idea/
+.DS_Store
+Thumbs.db

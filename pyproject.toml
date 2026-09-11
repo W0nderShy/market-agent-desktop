@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools==80.9.0"]
+build-backend = "setuptools.build_meta"
+[project]
+name = "market-monitor"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = ["httpx==0.28.1", "langgraph==1.2.11", "langgraph-checkpoint-sqlite==3.1.1"]
+[project.scripts]
+market-monitor = "market_monitor.cli:main"
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+[tool.setuptools.packages.find]
+where = ["src"]
