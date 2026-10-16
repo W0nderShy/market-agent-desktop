@@ -2,7 +2,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const {JSDOM}=require('../vendor/deepseek-harness/node_modules/jsdom');
+const {JSDOM}=require('jsdom');
 
 async function render(previous,events=[],older=[],probabilities=null){
  const html=fs.readFileSync(path.join(__dirname,'tracking.html'),'utf8');

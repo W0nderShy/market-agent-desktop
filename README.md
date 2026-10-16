@@ -71,7 +71,8 @@ API 仅绑定 `127.0.0.1:8765`，要求 `runtime/api-token` 中的令牌，拒�
 
 ```powershell
 .venv/Scripts/python.exe -m pytest -q
-node --test desktop/*.test.cjs
+npm ci --prefix desktop --ignore-scripts
+npm test --prefix desktop
 python scripts/check-privacy.py
 ```
 

@@ -4,5 +4,6 @@
   "private": true,
   "description": "Local market monitor companion for source-built dsh Desktop",
   "main": "main.cjs",
-  "scripts": {"test": "node --test policy.test.cjs"}
+  "scripts": {"test": "node --test *.test.cjs"},
+  "devDependencies": {"jsdom": "29.1.1"}
 }

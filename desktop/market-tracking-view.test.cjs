@@ -2,7 +2,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const {JSDOM}=require('../vendor/deepseek-harness/node_modules/jsdom');
+const {JSDOM}=require('jsdom');
 const {pickTask,renderOdds}=require('./market-tracking-view.js');
 
 function dom(){
