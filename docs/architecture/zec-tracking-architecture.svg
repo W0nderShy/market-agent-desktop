@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1250" viewBox="0 0 1600 1250"><defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="none" stroke="#70839b" stroke-width="1.5"/></marker></defs><rect width="1600" height="1250" fill="#0c1422"/>
+<text x="60" y="65" fill="#71c7f6" font-size="24" font-weight="600" font-family="Microsoft YaHei, sans-serif">Trading Terminal</text>
+<text x="60" y="118" fill="#f2f6fc" font-size="36" font-weight="600" font-family="Microsoft YaHei, sans-serif">长期金融研究 Agent · 总体架构</text>
+<text x="60" y="154" fill="#9dafc7" font-size="17" font-weight="400" font-family="Microsoft YaHei, sans-serif">以 ZECUSDT 永续为例  /  目标架构 · 非当前功能完成声明  /  2026-09-13</text>
+<rect x="45" y="185" width="460" height="915" rx="20" fill="#101c2d"/>
+<text x="60" y="221" fill="#f5c578" font-size="22" font-weight="600" font-family="Microsoft YaHei, sans-serif">01  跟踪控制与恢复</text>
+<rect x="565" y="185" width="470" height="915" rx="20" fill="#101c2d"/>
+<text x="580" y="221" fill="#76d9bf" font-size="22" font-weight="600" font-family="Microsoft YaHei, sans-serif">02  持续研究闭环</text>
+<rect x="1095" y="185" width="460" height="915" rx="20" fill="#101c2d"/>
+<text x="1110" y="221" fill="#b5a0ef" font-size="22" font-weight="600" font-family="Microsoft YaHei, sans-serif">03  数据与研究记忆</text>
+<rect x="60" y="250" width="430" height="115" rx="14" fill="#172438" stroke="#30435e"/><rect x="60" y="267" width="4" height="26" rx="2" fill="#55b9ef"/>
+<text x="82" y="284" fill="#55b9ef" font-size="21" font-weight="600" font-family="Microsoft YaHei, sans-serif">每个标的独立跟踪开关</text>
+<text x="82" y="315" fill="#bccbde" font-size="17" font-weight="400" font-family="Microsoft YaHei, sans-serif">开启 → 首次研究或恢复</text>
+<text x="82" y="343" fill="#bccbde" font-size="17" font-weight="400" font-family="Microsoft YaHei, sans-serif">主动暂停 → 保存状态，重启仍暂停</text>
+<polyline points="275,365 275,395" fill="none" stroke="#70839b" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="60" y="395" width="430" height="120" rx="14" fill="#172438" stroke="#30435e"/><rect x="60" y="412" width="4" height="26" rx="2" fill="#f5c578"/>
+<text x="82" y="429" fill="#f5c578" font-size="21" font-weight="600" font-family="Microsoft YaHei, sans-serif">黄色 · 恢复中</text>
+<text x="82" y="460" fill="#bccbde" font-size="17" font-weight="400" font-family="Microsoft YaHei, sans-serif">读取中断前判断与双断点</text>
+<text x="82" y="488" fill="#bccbde" font-size="17" font-weight="400" font-family="Microsoft YaHei, sans-serif">最后行情时间 + 最后完成分析时间</text>
+<polyline points="275,515 275,545" fill="none" stroke="#70839b" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="60" y="545" width="430" height="145" rx="14" fill="#172438" stroke="#30435e"/><rect x="60" y="562" width="4" height="26" rx="2" fill="#f5c578"/>
+<text x="82" y="579" fill="#f5c578" font-size="21" font-weight="600" font-family="Microsoft YaHei, sans-serif">补齐与分段复盘</text>
+<text x="82" y="610" fill="#bccbde" font-size="17" font-weight="400" font-family="Microsoft YaHei, sans-serif">补齐缺失行情、核查重要事件</text>
+<text x="82" y="638" fill="#bccbde" font-size="17" font-weight="400" font-family="Microsoft YaHei, sans-serif">先梳理大周期，再深入异常时段</text>
+<text x="82" y="666" fill="#bccbde" font-size="17" font-weight="400" font-family="Microsoft YaHei, sans-serif">缺口未解决：保持黄色并重试</text>
+<polyline points="275,690 275,720" fill="none" stroke="#70839b" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="60" y="720" width="430" height="120" rx="14" fill="#172438" stroke="#30435e"/><rect x="60" y="737" width="4" height="26" rx="2" fill="#f5c578"/>
+<text x="82" y="754" fill="#f5c578" font-size="21" font-weight="600" font-family="Microsoft YaHei, sans-serif">复核旧判断</text>
+<text x="82" y="785" fill="#bccbde" font-size="17" font-weight="400" font-family="Microsoft YaHei, sans-serif">保留 / 修正 / 作废旧假设</text>
+<text x="82" y="813" fill="#bccbde" font-size="17" font-weight="400" font-family="Microsoft YaHei, sans-serif">更新记忆、观察条件与恢复摘要</text>
+<polyline points="490,780 535,780 535,308 580,308" fill="none" stroke="#70839b" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="497" y="292" fill="#9fb2cb" font-size="15" font-weight="400" font-family="Microsoft YaHei, sans-serif">恢复完成</text>
+<rect x="60" y="900" width="430" height="155" rx="14" fill="#172438" stroke="#30435e"/><rect x="60" y="917" width="4" height="26" rx="2" fill="#76d9bf"/>
+<text x="82" y="934" fill="#76d9bf" font-size="21" font-weight="600" font-family="Microsoft YaHei, sans-serif">状态语义</text>
+<text x="82" y="965" fill="#bccbde" font-size="17" font-weight="400" font-family="Microsoft YaHei, sans-serif">绿灯：正常跟踪，模型可以休息</text>
+<text x="82" y="993" fill="#bccbde" font-size="17" font-weight="400" font-family="Microsoft YaHei, sans-serif">红灯：未跟踪，保留研究记录</text>
+<text x="82" y="1021" fill="#bccbde" font-size="17" font-weight="400" font-family="Microsoft YaHei, sans-serif">黄灯：恢复中或关键数据异常</text>
+<rect x="580" y="250" width="440" height="115" rx="14" fill="#172438" stroke="#30435e"/><rect x="580" y="267" width="4" height="26" rx="2" fill="#76d9bf"/>
+<text x="602" y="284" fill="#76d9bf" font-size="21" font-weight="600" font-family="Microsoft YaHei, sans-serif">LangGraph · 任务调度</text>
+<text x="602" y="315" fill="#bccbde" font-size="17" font-weight="400" font-family="Microsoft YaHei, sans-serif">管理验证、等待、唤醒、暂停</text>
+<text x="602" y="343" fill="#bccbde" font-size="17" font-weight="400" font-family="Microsoft YaHei, sans-serif">重启恢复 / 重试 / 费用预算</text>
+<polyline points="800,365 800,395" fill="none" stroke="#70839b" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="580" y="395" width="440" height="120" rx="14" fill="#172438" stroke="#30435e"/><rect x="580" y="412" width="4" height="26" rx="2" fill="#76d9bf"/>
+<text x="602" y="429" fill="#76d9bf" font-size="21" font-weight="600" font-family="Microsoft YaHei, sans-serif">有限上下文组装</text>
+<text x="602" y="460" fill="#bccbde" font-size="17" font-weight="400" font-family="Microsoft YaHei, sans-serif">目标 + 当前判断 + 新增行情</text>
+<text x="602" y="488" fill="#bccbde" font-size="17" font-weight="400" font-family="Microsoft YaHei, sans-serif">触发原因 + 少量相关历史</text>
+<polyline points="800,515 800,545" fill="none" stroke="#70839b" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="580" y="545" width="440" height="145" rx="14" fill="#172438" stroke="#30435e"/><rect x="580" y="562" width="4" height="26" rx="2" fill="#76d9bf"/>
+<text x="602" y="579" fill="#76d9bf" font-size="21" font-weight="600" font-family="Microsoft YaHei, sans-serif">dsh + DeepSeek · 研究</text>
+<text x="602" y="610" fill="#bccbde" font-size="17" font-weight="400" font-family="Microsoft YaHei, sans-serif">按需调用五类技术分析 Skill</text>
+<text x="602" y="638" fill="#bccbde" font-size="17" font-weight="400" font-family="Microsoft YaHei, sans-serif">核实外部信息，对照上一轮判断</text>
+<text x="602" y="666" fill="#bccbde" font-size="17" font-weight="400" font-family="Microsoft YaHei, sans-serif">独立对话可补充观点与修改目标</text>
+<polyline points="800,690 800,720" fill="none" stroke="#70839b" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="580" y="720" width="440" height="120" rx="14" fill="#172438" stroke="#30435e"/><rect x="580" y="737" width="4" height="26" rx="2" fill="#76d9bf"/>
+<text x="602" y="754" fill="#76d9bf" font-size="21" font-weight="600" font-family="Microsoft YaHei, sans-serif">校验、记忆更新与观察计划</text>
+<text x="602" y="785" fill="#bccbde" font-size="17" font-weight="400" font-family="Microsoft YaHei, sans-serif">区分事实、转述、推断</text>
+<text x="602" y="813" fill="#bccbde" font-size="17" font-weight="400" font-family="Microsoft YaHei, sans-serif">记录判断变化；重要变化才通知</text>
+<polyline points="800,840 800,870" fill="none" stroke="#70839b" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="580" y="870" width="440" height="120" rx="14" fill="#172438" stroke="#30435e"/><rect x="580" y="887" width="4" height="26" rx="2" fill="#76d9bf"/>
+<text x="602" y="904" fill="#76d9bf" font-size="21" font-weight="600" font-family="Microsoft YaHei, sans-serif">短期验证 → 休息等待</text>
+<text x="602" y="935" fill="#bccbde" font-size="17" font-weight="400" font-family="Microsoft YaHei, sans-serif">验证计划是否合理，必要时修订</text>
+<text x="602" y="963" fill="#bccbde" font-size="17" font-weight="400" font-family="Microsoft YaHei, sans-serif">暂停模型调用，行情和检测继续</text>
+<polyline points="800,990 800,1020 1055,1020 1055,308 1020,308" fill="none" stroke="#70839b" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="825" y="1050" fill="#9fb2cb" font-size="15" font-weight="400" font-family="Microsoft YaHei, sans-serif">条件触发 / 定时复查</text>
+<rect x="1110" y="250" width="430" height="115" rx="14" fill="#172438" stroke="#30435e"/><rect x="1110" y="267" width="4" height="26" rx="2" fill="#b5a0ef"/>
+<text x="1132" y="284" fill="#b5a0ef" font-size="21" font-weight="600" font-family="Microsoft YaHei, sans-serif">Bitget · 行情服务</text>
+<text x="1132" y="315" fill="#bccbde" font-size="17" font-weight="400" font-family="Microsoft YaHei, sans-serif">采集、校验、指标计算</text>
+<text x="1132" y="343" fill="#bccbde" font-size="17" font-weight="400" font-family="Microsoft YaHei, sans-serif">价格 / 量能 / 收盘事件触发</text>
+<polyline points="1325,365 1325,395" fill="none" stroke="#70839b" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="1110" y="395" width="430" height="120" rx="14" fill="#172438" stroke="#30435e"/><rect x="1110" y="412" width="4" height="26" rx="2" fill="#b5a0ef"/>
+<text x="1132" y="429" fill="#b5a0ef" font-size="21" font-weight="600" font-family="Microsoft YaHei, sans-serif">行情数据库</text>
+<text x="1132" y="460" fill="#bccbde" font-size="17" font-weight="400" font-family="Microsoft YaHei, sans-serif">按标的、周期、时间查询</text>
+<text x="1132" y="488" fill="#bccbde" font-size="17" font-weight="400" font-family="Microsoft YaHei, sans-serif">保留期限、归档与降采样</text>
+<polyline points="1110,452 1020,452" fill="none" stroke="#70839b" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="1110" y="545" width="430" height="145" rx="14" fill="#172438" stroke="#30435e"/><rect x="1110" y="562" width="4" height="26" rx="2" fill="#b5a0ef"/>
+<text x="1132" y="579" fill="#b5a0ef" font-size="21" font-weight="600" font-family="Microsoft YaHei, sans-serif">分层研究记忆</text>
+<text x="1132" y="610" fill="#bccbde" font-size="17" font-weight="400" font-family="Microsoft YaHei, sans-serif">当前状态：判断、证据、失效条件</text>
+<text x="1132" y="638" fill="#bccbde" font-size="17" font-weight="400" font-family="Microsoft YaHei, sans-serif">事件日志：变化原因与原始引用</text>
+<text x="1132" y="666" fill="#bccbde" font-size="17" font-weight="400" font-family="Microsoft YaHei, sans-serif">阶段总结：跨天 / 跨周演变</text>
+<polyline points="1110,602 1080,602 1080,490 1020,490" fill="none" stroke="#70839b" stroke-width="2" marker-end="url(#arrow)"/>
+<polyline points="1020,780 1093,780 1093,653 1110,653" fill="none" stroke="#70839b" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="1110" y="720" width="430" height="120" rx="14" fill="#172438" stroke="#30435e"/><rect x="1110" y="737" width="4" height="26" rx="2" fill="#b5a0ef"/>
+<text x="1132" y="754" fill="#b5a0ef" font-size="21" font-weight="600" font-family="Microsoft YaHei, sans-serif">运行断点与跟踪意图</text>
+<text x="1132" y="785" fill="#bccbde" font-size="17" font-weight="400" font-family="Microsoft YaHei, sans-serif">开关状态、数据与研究双进度</text>
+<text x="1132" y="813" fill="#bccbde" font-size="17" font-weight="400" font-family="Microsoft YaHei, sans-serif">待执行计划、恢复范围、执行记录</text>
+<rect x="1110" y="900" width="430" height="155" rx="14" fill="#172438" stroke="#30435e"/><rect x="1110" y="917" width="4" height="26" rx="2" fill="#b5a0ef"/>
+<text x="1132" y="934" fill="#b5a0ef" font-size="21" font-weight="600" font-family="Microsoft YaHei, sans-serif">记忆治理</text>
+<text x="1132" y="965" fill="#bccbde" font-size="17" font-weight="400" font-family="Microsoft YaHei, sans-serif">按时间和周期检查判断有效性</text>
+<text x="1132" y="993" fill="#bccbde" font-size="17" font-weight="400" font-family="Microsoft YaHei, sans-serif">总结保留出处，历史按需检索</text>
+<text x="1132" y="1021" fill="#bccbde" font-size="17" font-weight="400" font-family="Microsoft YaHei, sans-serif">控制每轮输入，不累积无限对话</text>
+<text x="60" y="1150" fill="#f2f6fc" font-size="20" font-weight="600" font-family="Microsoft YaHei, sans-serif">关键约束</text>
+<text x="60" y="1188" fill="#dbe5f4" font-size="19" font-weight="400" font-family="Microsoft YaHei, sans-serif">切换图表不改变跟踪任务  ·  意外中断自动恢复，主动暂停保持关闭  ·  恢复期间的旧事件合并通知</text>
+<text x="60" y="1220" fill="#9dafc7" font-size="17" font-weight="400" font-family="Microsoft YaHei, sans-serif">原始数据持续积累；模型每轮只读取有限上下文。恢复流程同样复用研究引擎与记忆模块。</text>
+</svg>

@@ -1,0 +1,174 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1410" viewBox="0 0 1800 1410" role="img" aria-labelledby="title desc">
+  <title id="title">长期资产追踪：证据、状态与判断修订闭环</title>
+  <desc id="desc">按宏观、跨资产、基本面、客户投资、价格、叙事、泡沫与背离的顺序研究资产。比较水平、方向和加速度，分类长期状态，保留证据缺口，并与上次判断对照后继续追踪。</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0a1224"/><stop offset="1" stop-color="#111e31"/></linearGradient>
+    <linearGradient id="hero" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#172d40"/><stop offset="1" stop-color="#1b2542"/></linearGradient>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#63c6d4"/></marker>
+    <style>
+      text{font-family:"Microsoft YaHei","Noto Sans CJK SC","PingFang SC",Arial,sans-serif}
+      .title{font-size:44px;font-weight:700;fill:#f2f7ff;letter-spacing:1px}
+      .subtitle{font-size:20px;fill:#a7bacb}
+      .section{font-size:20px;font-weight:700;fill:#d7e7f5;letter-spacing:2px}
+      .num{font-size:19px;font-weight:700;fill:#09182a}
+      .cardtitle{font-size:25px;font-weight:700;fill:#f2f7ff}
+      .body{font-size:19px;fill:#c4d3e0}
+      .muted{font-size:17px;fill:#9bb0c2}
+      .tag{font-size:17px;font-weight:700}
+      .sidehead{font-size:24px;font-weight:700;fill:#eff7ff}
+      .sidebody{font-size:18px;fill:#c4d3e0}
+      .chiptext{font-size:18px;font-weight:700;fill:#e8f2f8}
+      .foothead{font-size:22px;font-weight:700}
+      .footbody{font-size:18px;fill:#c5d4e0}
+    </style>
+  </defs>
+  <rect width="1800" height="1410" fill="url(#bg)"/>
+  <circle cx="1570" cy="-25" r="350" fill="#243452" opacity=".23"/>
+  <circle cx="70" cy="1420" r="350" fill="#145f64" opacity=".14"/>
+
+  <text x="60" y="76" class="title">长期资产追踪 · 分析与修订闭环</text>
+  <text x="62" y="112" class="subtitle">目标：识别正反馈的形成、确认、过热、背离与衰退；关注边际变化，而非预测下一根 K 线</text>
+  <rect x="1513" y="48" width="225" height="44" rx="22" fill="#1d3743" stroke="#386b72"/>
+  <circle cx="1540" cy="70" r="7" fill="#64dcb6"/>
+  <text x="1557" y="77" class="tag" fill="#a9e3d0">长期状态持续更新</text>
+
+  <rect x="60" y="143" width="1680" height="107" rx="17" fill="url(#hero)" stroke="#33485d"/>
+  <text x="83" y="178" class="section">证据入口</text>
+  <text x="83" y="218" class="body">原始来源</text><path d="M 250 211 H 303" stroke="#63c6d4" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="333" y="218" class="body">发布日期 / 观察时点</text><path d="M 580 211 H 633" stroke="#63c6d4" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="663" y="218" class="body">同口径与频率对齐</text><path d="M 908 211 H 961" stroke="#63c6d4" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="992" y="218" class="body">事实 / 推断分开</text><path d="M 1220 211 H 1273" stroke="#63c6d4" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="1305" y="218" class="body">缺失 / 过期显式标记</text>
+
+  <text x="60" y="279" class="section">七层分析顺序</text>
+  <text x="980" y="279" class="muted">从环境到资产，再回到判断</text>
+  <text x="1240" y="279" class="section">横向判定规则</text>
+
+  <!-- 01 Macro -->
+  <rect x="60" y="300" width="550" height="145" rx="16" fill="#162b39" stroke="#2c6370"/>
+  <rect x="60" y="300" width="6" height="145" rx="3" fill="#63d3d8"/>
+  <circle cx="96" cy="337" r="18" fill="#63d3d8"/><text x="83" y="344" class="num">01</text>
+  <text x="129" y="344" class="cardtitle">宏观 / 金融环境</text>
+  <text x="85" y="386" class="body">政策为何变化？流动性、实际利率与信用在改善吗？</text>
+  <text x="85" y="419" class="tag" fill="#7de0df">增长 × 通胀 × 政策 × 金融压力</text>
+  <path d="M 614 372 H 636" stroke="#63c6d4" stroke-width="2" marker-end="url(#arrow)"/>
+  <!-- 02 Cross asset -->
+  <rect x="645" y="300" width="555" height="145" rx="16" fill="#19283e" stroke="#42638b"/>
+  <rect x="645" y="300" width="6" height="145" rx="3" fill="#80affb"/>
+  <circle cx="681" cy="337" r="18" fill="#80affb"/><text x="668" y="344" class="num">02</text>
+  <text x="714" y="344" class="cardtitle">跨资产锚点</text>
+  <text x="670" y="386" class="body">金 / 铜 / 油 / 国债 / 信用 / BTC / 股指共同指向什么？</text>
+  <text x="670" y="419" class="tag" fill="#a9c7fd">联合解释，不机械套用历史相关性</text>
+
+  <!-- 03 Fundamental -->
+  <rect x="60" y="463" width="550" height="145" rx="16" fill="#182e32" stroke="#377267"/>
+  <rect x="60" y="463" width="6" height="145" rx="3" fill="#70d4a8"/>
+  <circle cx="96" cy="500" r="18" fill="#70d4a8"/><text x="83" y="507" class="num">03</text>
+  <text x="129" y="507" class="cardtitle">资产基本面</text>
+  <text x="85" y="549" class="body">营收、利润率、指引与修正在兑现还是放缓？</text>
+  <text x="85" y="582" class="tag" fill="#92e1bb">优先看增速的变化，而非绝对高增长</text>
+  <path d="M 614 535 H 636" stroke="#63c6d4" stroke-width="2" marker-end="url(#arrow)"/>
+  <!-- 03b Capex -->
+  <rect x="645" y="463" width="555" height="145" rx="16" fill="#243129" stroke="#587451"/>
+  <rect x="645" y="463" width="6" height="145" rx="3" fill="#a0d17e"/>
+  <circle cx="681" cy="500" r="18" fill="#a0d17e"/><text x="668" y="507" class="num">03</text>
+  <text x="714" y="507" class="cardtitle">客户 / 产业投资</text>
+  <text x="670" y="549" class="body">客户 CapEx、订单与产能扩张能否领先收入？</text>
+  <text x="670" y="582" class="tag" fill="#bfe5a4">供应商尤其要追踪客户的投资</text>
+
+  <!-- Price -->
+  <rect x="60" y="626" width="550" height="145" rx="16" fill="#182a3a" stroke="#3d6981"/>
+  <rect x="60" y="626" width="6" height="145" rx="3" fill="#74b9f5"/>
+  <circle cx="96" cy="663" r="18" fill="#74b9f5"/><text x="83" y="670" class="num">03</text>
+  <text x="129" y="670" class="cardtitle">价格作为验证</text>
+  <text x="85" y="712" class="body">趋势、相对强度、突破 / 回踩、量能和消息反应。</text>
+  <text x="85" y="745" class="tag" fill="#99ccf8">价格是反馈信号，不是内在价值证明</text>
+  <path d="M 614 698 H 636" stroke="#63c6d4" stroke-width="2" marker-end="url(#arrow)"/>
+  <!-- 04 narrative -->
+  <rect x="645" y="626" width="555" height="145" rx="16" fill="#2b2740" stroke="#71638b"/>
+  <rect x="645" y="626" width="6" height="145" rx="3" fill="#b7a1eb"/>
+  <circle cx="681" cy="663" r="18" fill="#b7a1eb"/><text x="668" y="670" class="num">04</text>
+  <text x="714" y="670" class="cardtitle">叙事 / 估值</text>
+  <text x="670" y="712" class="body">市场愿为未来支付多少？倍数扩张有无兑现？</text>
+  <text x="670" y="745" class="tag" fill="#d4c5fa">叙事可放大估值，不能替代基本面</text>
+
+  <!-- 05 Reflexivity -->
+  <rect x="60" y="789" width="550" height="145" rx="16" fill="#342a2d" stroke="#8f6b55"/>
+  <rect x="60" y="789" width="6" height="145" rx="3" fill="#f2b872"/>
+  <circle cx="96" cy="826" r="18" fill="#f2b872"/><text x="83" y="833" class="num">05</text>
+  <text x="129" y="833" class="cardtitle">反身性 / 泡沫风险</text>
+  <text x="85" y="875" class="body">价格和估值上涨是否快于已兑现的盈利与投资？</text>
+  <text x="85" y="908" class="tag" fill="#f7ce9b">区分健康扩张、过热与脱离现实</text>
+  <path d="M 614 861 H 636" stroke="#63c6d4" stroke-width="2" marker-end="url(#arrow)"/>
+  <!-- 06 Divergence -->
+  <rect x="645" y="789" width="555" height="145" rx="16" fill="#332a37" stroke="#8b566b"/>
+  <rect x="645" y="789" width="6" height="145" rx="3" fill="#ed8fa0"/>
+  <circle cx="681" cy="826" r="18" fill="#ed8fa0"/><text x="668" y="833" class="num">06</text>
+  <text x="714" y="833" class="cardtitle">内部 / 跨资产背离</text>
+  <text x="670" y="875" class="body">价格与收入、CapEx；股价与信用；SOX 与铜。</text>
+  <text x="670" y="908" class="tag" fill="#f2b3c1">要求持续性与因果解释，避免一天噪声</text>
+
+  <!-- 07 Revision -->
+  <rect x="60" y="952" width="1140" height="136" rx="16" fill="#31302d" stroke="#938153"/>
+  <rect x="60" y="952" width="6" height="136" rx="3" fill="#e8ce80"/>
+  <circle cx="96" cy="990" r="18" fill="#e8ce80"/><text x="83" y="997" class="num">07</text>
+  <text x="129" y="997" class="cardtitle">与上轮比较 · 修订长期判断</text>
+  <text x="85" y="1035" class="body">原判断 → 新证据 → 支持 / 反证 → 状态变化 → 下次确认条件与失效条件</text>
+  <text x="85" y="1065" class="tag" fill="#efdfae">持久保存依据；断线恢复先补数据，再比较判断</text>
+
+  <!-- marginal changes -->
+  <rect x="1240" y="300" width="500" height="213" rx="16" fill="#192b3b" stroke="#355a70"/>
+  <text x="1264" y="339" class="sidehead">边际变化优先</text>
+  <text x="1264" y="371" class="sidebody">同口径、同频率，连续比较三个层次</text>
+  <rect x="1263" y="391" width="145" height="72" rx="11" fill="#24465a"/>
+  <rect x="1417" y="391" width="145" height="72" rx="11" fill="#275668"/>
+  <rect x="1571" y="391" width="145" height="72" rx="11" fill="#2d6170"/>
+  <text x="1284" y="421" class="chiptext">水平</text><text x="1284" y="449" class="muted">现在何处？</text>
+  <text x="1437" y="421" class="chiptext">一阶变化</text><text x="1437" y="449" class="muted">改善 / 恶化</text>
+  <text x="1590" y="421" class="chiptext">二阶变化</text><text x="1590" y="449" class="muted">加速 / 减速</text>
+  <text x="1264" y="491" class="muted">财报季度值与每日价格不可直接混算。</text>
+
+  <!-- macro regimes -->
+  <rect x="1240" y="531" width="500" height="148" rx="16" fill="#1c2d37" stroke="#3b6268"/>
+  <text x="1264" y="568" class="sidehead">宏观状态候选</text>
+  <text x="1264" y="606" class="sidebody">适温 · 再通胀 · 去通胀</text>
+  <text x="1264" y="637" class="sidebody">滞胀 · 衰退式宽松 · 金融压力</text>
+  <text x="1264" y="661" class="muted">降息必须追问：通胀缓和，还是增长崩塌？</text>
+
+  <!-- 8 states -->
+  <rect x="1240" y="697" width="500" height="361" rx="16" fill="#1d2a39" stroke="#40546b"/>
+  <text x="1264" y="736" class="sidehead">本轮主状态 · 八种候选</text>
+  <rect x="1263" y="754" width="218" height="48" rx="9" fill="#214c49"/><text x="1280" y="785" class="chiptext">早期复苏</text>
+  <rect x="1492" y="754" width="224" height="48" rx="9" fill="#25534b"/><text x="1509" y="785" class="chiptext">基本面确认</text>
+  <rect x="1263" y="811" width="218" height="48" rx="9" fill="#28614d"/><text x="1280" y="842" class="chiptext">完整正反馈</text>
+  <rect x="1492" y="811" width="224" height="48" rx="9" fill="#62523a"/><text x="1509" y="842" class="chiptext">叙事扩张</text>
+  <rect x="1263" y="868" width="218" height="48" rx="9" fill="#74503f"/><text x="1280" y="899" class="chiptext">泡沫形成</text>
+  <rect x="1492" y="868" width="224" height="48" rx="9" fill="#704355"/><text x="1509" y="899" class="chiptext">叙事背离</text>
+  <rect x="1263" y="925" width="218" height="48" rx="9" fill="#673f55"/><text x="1280" y="956" class="chiptext">基本面背离</text>
+  <rect x="1492" y="925" width="224" height="48" rx="9" fill="#663a48"/><text x="1509" y="956" class="chiptext">周期恶化</text>
+  <text x="1264" y="1008" class="sidebody">不是必经路线；背离与泡沫风险可并行记录。</text>
+  <text x="1264" y="1035" class="tag" fill="#f1cd90">关键数据缺失 → 证据不足，不强行分类</text>
+
+  <!-- outputs -->
+  <rect x="1240" y="1075" width="500" height="130" rx="16" fill="#223346" stroke="#4a6a83"/>
+  <text x="1264" y="1111" class="sidehead">每轮交付 A–I</text>
+  <text x="1264" y="1143" class="sidebody">状态 · 方向矩阵 · 边际变化 · 跨资产</text>
+  <text x="1264" y="1172" class="sidebody">基本面 · 价格 · 叙事泡沫 · 背离 · 总结</text>
+
+  <path d="M 1200 1020 H 1228" stroke="#63c6d4" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="60" y="1141" class="section">追踪循环</text>
+  <path d="M 185 1134 H 1165" stroke="#4b7a84" stroke-width="2" stroke-dasharray="9 9" marker-end="url(#arrow)"/>
+  <text x="60" y="1177" class="body">新数据 / 事件触发 → 候选变化 → 多周期确认 → 重估状态 → 保存证据与反证 → 等待下一次复核</text>
+
+  <rect x="60" y="1227" width="805" height="134" rx="17" fill="#17372f" stroke="#3b8f6d"/>
+  <circle cx="93" cy="1260" r="8" fill="#77deb2"/>
+  <text x="113" y="1268" class="foothead" fill="#aaf0cc">强健正反馈</text>
+  <text x="87" y="1305" class="footbody">环境支持 + 收入兑现 + 客户投资扩张 + 相对强度改善</text>
+  <text x="87" y="1334" class="footbody">+ 叙事增长仍有基本面支撑 + 跨资产确认</text>
+  <rect x="882" y="1227" width="858" height="134" rx="17" fill="#3a292f" stroke="#985565"/>
+  <circle cx="916" cy="1260" r="8" fill="#f29aab"/>
+  <text x="936" y="1268" class="foothead" fill="#ffc0cb">危险反身性</text>
+  <text x="909" y="1305" class="footbody">价格 / 叙事 / 估值快速上行，营收与投资却停滞或转弱</text>
+  <text x="909" y="1334" class="footbody">→ 不把流动性推动的上涨误判为基本面确认</text>
+  <text x="60" y="1390" class="muted">框架来源：用户提供的 Long-Term Asset Tracking Agent 角色定义 · SVG 为可编辑矢量图</text>
+</svg>

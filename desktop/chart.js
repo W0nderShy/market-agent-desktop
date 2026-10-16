@@ -54,10 +54,10 @@
       if(!w||!h)return;
       const ratio=globalThis.devicePixelRatio||1;
       canvas.width=Math.round(w*ratio);canvas.height=Math.round(h*ratio);ctx.setTransform(ratio,0,0,ratio,0,0);
-      ctx.fillStyle='#10151d';ctx.fillRect(0,0,w,h);ctx.font='11px ui-monospace, Consolas, monospace';
+      ctx.fillStyle='#181818';ctx.fillRect(0,0,w,h);ctx.font='12px "Microsoft YaHei UI", "Segoe UI", sans-serif';
       const right=w-90,top=22,bottom=h-32,priceBottom=top+(bottom-top)*0.74,volTop=priceBottom+22;
       const rows=visible(this.rows,this.count,this.offset),scale=bounds(rows);
-      ctx.strokeStyle='#202936';ctx.lineWidth=1;
+      ctx.strokeStyle='#242424';ctx.lineWidth=1;
       for(let i=0;i<=5;i++){
         const y=top+(priceBottom-top)*i/5;
         ctx.beginPath();ctx.moveTo(0,y+.5);ctx.lineTo(w,y+.5);ctx.stroke();

@@ -11,6 +11,9 @@ from .bitget import Bitget
 from .config import validate_items
 from .graph import build_graph
 from .store import Store
+from .tracking import Tracking
+from .research_sources import ExternalEvidence
+from .wechat import WeChatBridge
 
 class Monitor:
     def __init__(self, runtime='runtime', feed=None, poll_interval=60):
@@ -28,6 +31,11 @@ class Monitor:
         self.thread = None
         self.last_poll_ts = self.store.last_poll()
         self.error = None
+        self.external_evidence = ExternalEvidence(self.feed) if feed is None else None
+        self.tracking = Tracking(self.runtime,self.feed,external=self.external_evidence)
+        self.wechat = WeChatBridge(self.runtime)
+        self.tracking_thread = None
+        self.wechat_thread = None
 
     def set_watchlist(self, items):
         items = validate_items(items)
@@ -74,6 +82,26 @@ class Monitor:
                 self.stop_event.wait(self.poll_interval)
         self.thread = threading.Thread(target=loop,daemon=True)
         self.thread.start()
+        def research_loop():
+            while not self.stop_event.is_set():
+                self.tracking.tick()
+                self.stop_event.wait(30)
+        self.tracking_thread=threading.Thread(target=research_loop,daemon=True)
+        self.tracking_thread.start()
+        def wechat_loop():
+            while not self.stop_event.is_set():
+                try:
+                    self.wechat.observe(self.tracking.status()['tasks'])
+                    self.wechat.dispatch()
+                    if self.wechat.status()['enabled']:
+                        messages=self.wechat.receive_once()
+                        if messages:self.wechat.handle_inbound(messages,self.tracking)
+                except Exception as exc:
+                    # Delivery state stays pending and the next pass can retry.
+                    self.wechat.record_error(type(exc).__name__)
+                self.stop_event.wait(5)
+        self.wechat_thread=threading.Thread(target=wechat_loop,daemon=True)
+        self.wechat_thread.start()
 
     def cleanup(self):
         cutoff = int((time.time()-30*86400)*1000)
@@ -92,6 +120,11 @@ class Monitor:
     def close(self):
         self.stop_event.set()
         if self.thread: self.thread.join()
+        if self.tracking_thread: self.tracking_thread.join()
+        if self.wechat_thread: self.wechat_thread.join(timeout=40)
+        self.tracking.close()
+        self.wechat.close()
+        if self.external_evidence:self.external_evidence.close()
         with self.poll_lock:
             self.store.close()
             self.checkpoint_db.close()

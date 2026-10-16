@@ -3,15 +3,21 @@ $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 Set-Location -LiteralPath $projectRoot
 function Assert-Exit { if ($LASTEXITCODE -ne 0) { throw "Command failed (exit $LASTEXITCODE)." } }
-& git submodule update --init --recursive
-Assert-Exit
-& (Join-Path $PSScriptRoot 'apply-dsh-patch.ps1')
+$dshRoot = Join-Path $projectRoot 'vendor/deepseek-harness'
+if (Test-Path -LiteralPath (Join-Path $projectRoot '.gitmodules')) {
+    & git submodule update --init --recursive
+    Assert-Exit
+    & (Join-Path $PSScriptRoot 'apply-dsh-patch.ps1')
+} elseif (!(Test-Path -LiteralPath (Join-Path $dshRoot 'package.json'))) {
+    throw 'Bundled dsh source is missing.'
+} else {
+    Write-Output 'Bundled dsh source detected; integration is already in the snapshot.'
+}
 if (!(Test-Path -LiteralPath '.venv/Scripts/python.exe')) { & python -m venv .venv; Assert-Exit }
 & ./.venv/Scripts/python.exe -m pip install -r requirements-dev.txt
 Assert-Exit
 & ./.venv/Scripts/python.exe -m pip install --no-deps -e .
 Assert-Exit
-$dshRoot = Join-Path $projectRoot 'vendor/deepseek-harness'
 Push-Location -LiteralPath $dshRoot
 try {
     # Explicit local React links prevent resolving a parent project's React version.

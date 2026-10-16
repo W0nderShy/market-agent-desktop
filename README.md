@@ -1,12 +1,14 @@
 # Market Agent Desktop
 
-基于完整 DeepSeek Harness 源码与 LangGraph 的本地市场监控项目。仓库目前私有，公开需要项目所有者明确决定。
+基于 DeepSeek Harness 源码与 LangGraph 的 Windows 本地市场研究终端。仓库包含固定版本的上游源码 submodule 和可重放的桌面整合补丁；真实凭据与个人运行数据只保存在本机。
+
+本项目自有代码采用 [MIT 许可](LICENSE)。DeepSeek Harness 和 `vendor/market-skills` 保留各自的 MIT 许可证与版权声明。
 
 ## 当前里程碑
 
-前四步的开发底座：独立仓库、源码构建 dsh Desktop、Bitget 自选行情、持久化采集流程。通过可重放源码补丁将行情终端设为 dsh Desktop 主页面，提供自选列表、真实 K 线与成交量、行情详情和持久事件；通过菜单和对话按钮切换原 dsh 会话界面。模型研究、休息触发脚本、持续思考、对话 agent、托盘和 Windows 安装包属于后续里程碑。不要把采集事件理解为投资信号或已完成的研究。
+目前提供源码构建的 dsh Desktop、Bitget 自选行情与多周期 K 线、持久化采集、DeepSeek 对话 Agent、五项量价分析 skill、可恢复的长期追踪，以及可选的腾讯官方微信 ClawBot 文本挂载。长期追踪以行情变化和复核时间触发研究，保存历史判断；电脑休眠或关机时不会运行。没有自动交易、系统托盘、开机自启或免依赖安装包。
 
-监控读取公开市场数据，不需要 Bitget API Key，不调用账户和交易接口，也不会调用模型。默认自选列表为空。
+行情使用 Bitget 公开市场接口，不需要 Bitget API Key，也不调用账户或交易接口。只有启用 Agent 或长期研究并配置模型后才会调用模型。微信挂载需要用户自行扫码开启。
 
 ## Windows 开发环境
 
@@ -20,7 +22,9 @@ powershell -NoProfile -File scripts/setup.ps1
 powershell -NoProfile -File scripts/start.ps1
 ```
 
-私有仓库克隆需要你自己的 GitHub 登录。不要向项目配置文件填写 GitHub 令牌。已完成构建后，`start.ps1` 启动后台和整合行情首页的 dsh Desktop。`-MonitorOnly` 仅用于开发调试独立行情窗口。这阶段交付的是源码开发环境，不是免依赖安装包。
+已完成构建后，`start.ps1` 启动后台和整合行情首页的 dsh Desktop。`-MonitorOnly` 仅用于开发调试独立行情窗口。这是源码开发环境，不是免依赖安装包。GitHub 自动生成的 Source code 压缩包不含 submodule 源码；需要完整 dsh 源码时请按上面的命令递归克隆。
+
+完成首次安装后，可运行 `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-launcher.ps1` 生成项目根目录的 `Trading_Terminal.exe`，以后双击即可启动。它只是便捷入口，不包含 Python、Electron 或密钥。可加 `-CopyToParent` 将入口复制到工程的上一级目录；这种布局要求工程目录名为 `AI_back`。
 
 在行情窗口选择 SPOT 或合约类别，输入交易品种代码后点击“验证并添加”。同名现货和合约分别保存。股票相关产品必须使用 Bitget 实际返回的交易代码和类别，不自动推断传统股票代码。添加后点击“立即采集”，或等下一次 60 秒轮询。无数据、过期数据和接口错误会显示状态。
 
@@ -67,7 +71,7 @@ API 仅绑定 `127.0.0.1:8765`，要求 `runtime/api-token` 中的令牌，拒�
 
 ```powershell
 .venv/Scripts/python.exe -m pytest -q
-node --test desktop/policy.test.cjs desktop/chart.test.cjs
+node --test desktop/*.test.cjs
 python scripts/check-privacy.py
 ```
 
@@ -84,3 +88,38 @@ CI 运行无密钥后端回归、桌面 IPC 白名单测试和已跟踪文件隐
 - **市场接口不可达**：显示错误并保留旧行情及过期标记，不制造价格数据。
 
 上游文档：[dsh Desktop](https://github.com/deepseek-ai/deepseek-harness/tree/master/apps/desktop)、[Bitget 市场接口](https://www.bitget.com/docs/catalog/market/market-data)、[LangGraph 持久化](https://docs.langchain.com/oss/python/langgraph/persistence)。
+
+
+### Terminal Agent (DeepSeek)
+Open **Agent** in the market terminal. Enter the official DeepSeek API key in the password field and save it; select a model from the running dsh catalog and create a session. Messages automatically include all loaded OHLCV candles for the selected symbol and interval (up to 300), timestamp and unfinished-candle flag. The current chart is also atomically mirrored to runtime/market-context.json for the dsh read tool. Changing the chart invalidates its previous snapshot until new data loads. Stop cancels the active dsh turn; New session starts a separate conversation. The latest session is restored from `runtime/agent-session.json` and dsh stores its history under the private runtime home.
+
+Credentials are written through dsh's write-only credentials interface to its local `.credentials.yaml`; this is local file storage, not encrypted credential-vault storage. The key is never returned to the panel. Runtime files must not be uploaded. Sending a message sends that message and attached market context to DeepSeek. Replies update from dsh snapshots every 1.5 seconds while the panel is open. Long-running autonomous monitoring is not enabled by this integration. The compact panel displays tool calls/results, explicit allow-once/reject approvals and structured user questions through the dsh event stream. Existing dsh web_search/web_fetch capabilities remain available; external service availability depends on their provider configuration.
+
+Validation: desktop build, bounded IPC operation tests, live dsh model catalog, session creation/history and missing-credential failure path verified without a real API key. A successful official-model response still requires a user-supplied key.
+
+Chart-context integration verified on 2026-09-11: official DeepSeek returned the correct symbol, interval, all 300 candle count and endpoint timestamps; a separate test turn successfully called read on market-context.json and web_search. Switching ZEC 1m to BTC 15m cleared the old snapshot and updated both the panel context and local file to 300 BTC candles. Original user session restored after isolated live tests.
+
+
+### Five financial analysis skills
+
+Project-scoped dsh skills in `.agents/skills`: market-volume, market-trend, market-s-r, market-breakout, market-exhaustion. These use the pinned MIT math subset under `vendor/market-skills`, not an external data provider. Run `.venv/Scripts/python.exe scripts/run_market_skill.py all` from the project root to analyze the current Bitget chart. The script needs no additional dependencies or API keys. Defaults to closed bars and rejects snapshots older than three minutes. dsh discovers these skills from the project root; restart Desktop if its skill catalog has not refreshed. Agent Settings displays the number enabled.
+
+## 持续跟踪
+
+启动 `Trading_Terminal.exe`，点击顶部“持续跟踪”。支持独立任务开关、红黄绿状态、量价触发、研究记忆、暂停与重启恢复。当前规则见 [长期资产追踪](docs/architecture/LONG_TERM_TRACKING.md)；[第一版记录](docs/architecture/TRACKING_V1.md)供回溯。
+
+每轮研究把五项量价 skill、多周期 Bitget K 线、已接入的外部证据和历史判断交给长期追踪角色，保存 BUY / HOLD / SELL / 证据不足的结构化判断与理由，并在独立窗口显示历次修订。现有外部数据尚不能覆盖基本面、客户资本开支及估值叙事；量价证据明确时仍可给出 BUY / SELL，并标为“量价战术判断”，长期阶段继续单独标示证据缺口。判断需要具体依据与失效条件。此功能不读取用户仓位，也不执行交易。
+
+“动态胜率”由已收盘 Bitget K 线计算未来观察窗口的涨、跌、震荡三类历史条件占比，分别对应 BUY / SELL / HOLD，三项总和固定为 100%。采集到新的收盘 K 线时更新，无需等待模型研究；界面同时显示窗口和样本量。它不是策略交易胜率或已校准的未来概率，历史数据不足时不显示数值。
+
+行情页顶部的“监控”状态片显示本地采集状态，并提供即时采集入口；持续追踪的 BUY / HOLD / SELL 比例固定在行情页右下角。多个标的同时追踪时优先展示当前选中的标的，点击右下角卡片的箭头可打开完整追踪记录。
+
+长期研究的多周期采样、宏观与跨资产证据、状态修订及当前数据缺口见上述文档；分析框架见 [SVG 图与解读](docs/architecture/LONG_TERM_FRAMEWORK_ANALYSIS.md)。
+
+### 个人微信挂载（腾讯官方 ClawBot）
+
+在“持续跟踪”独立窗口展开“微信挂载”，点击“扫码连接”，用自己的微信扫码并按提示完成确认。连接后先向 ClawBot 发一条消息，再开启通知。发送“状态”可查看当前标的的 BUY / HOLD / SELL 比例与结论；发送“研究 ZECUSDT 核验量能能否延续”会把这句话写入该标的下一轮研究方向，研究完成后会推送更新。推送仅包含标的、Bitget 数据源、简短结论、建议和三项历史条件占比，不包含完整 K 线、API 密钥或模型内部提示。
+
+通知由服务进程持久排队，仅在初次建档、研究判断改变或三项比例明显变化时汇报；比例变化还受可选间隔限制，所有自动消息最短间隔 30 分钟。重复结论不会按时间机械重发。为避免微信会话限制，自动通知最多发送 8 条/24 小时。桌面与服务必须保持运行；电脑休眠或关机时不能发消息，恢复后继续处理队列。腾讯官方 iLink 的主动消息依赖最近入站消息的 `context_token`，长时间没有微信互动时可能返回 `ret=-2`；此时消息保持待发送，界面显示 `context_expired`，你再次给 ClawBot 发消息后才会重试。对于其他拒收或不确定结果，系统停止自动重试，避免同一内容重复送达。`sent` 只表示官方 API 返回成功，不代表手机通知已被阅读。此边界来自 [腾讯协议说明](https://github.com/Tencent/openclaw-weixin/blob/main/docs/protocol_zh_CN.md)；主动发送时效的实际问题见 [腾讯仓库 issue](https://github.com/Tencent/openclaw-weixin/issues/309)。
+
+微信 Bot 凭证保存在忽略的 `runtime/wechat-ilink.dpapi`，Windows 上使用当前账户的 DPAPI 加密；SQLite 消息队列与用户发来的研究方向保存在 `runtime/wechat.sqlite3`。请不要把 runtime 目录同步到公开仓库。该挂载直接使用腾讯公开的 iLink 协议，不安装 OpenClaw；目前只支持文本消息与上述命令，微信内任意问题的完整 DeepSeek 对话尚未接通。

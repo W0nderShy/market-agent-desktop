@@ -1,0 +1,27 @@
+{
+  "repository": "https://github.com/krzysu/market-skills",
+  "commit": "1af8e68377efb18dd18af0c22360f991f307f031",
+  "license": "MIT",
+  "files": {
+    "LICENSE": "a8497e5583a47ecf95664440056aed8f511ebbbbf36821c6b67da3feb264cc7e",
+    "analysis/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "analysis/formatting.py": "71eee48ced68724b42bd5f283decef54c961c4784158e2a85e52b289189c8114",
+    "analysis/intervals.py": "7dac9e26dca11d334d16c24dea0e54d7dc32ab446a9dc52ae190add4cfab8a0a",
+    "analysis/skill_loader.py": "16039a33efe4f2b77869685943296ff708104f109d88ea42f93fd250d26a5923",
+    "analysis/indicators/fib.py": "c9eeb3572543bc4478eee9f6fb2b4129c7e9bcd595f7d1d308f5cd50ec7c3368",
+    "analysis/indicators/momentum.py": "8fad10126c5eea88246993514cba7eb8e4e49a4979b71be1cbef728e5c6fe8a0",
+    "analysis/indicators/swing.py": "c6cd8804909fbb9ec148594225de9fc8bbd37df360cb8e80273c4d09a0b1eef5",
+    "analysis/indicators/valuation.py": "c974adafcb0aba5c9a48b36cd41b303d142433b73b12c7b12fa51a9f770b211d",
+    "analysis/indicators/volatility.py": "7b56d2f4d2dd4b5f0960a5abaa98bdff09d2d65493fe698b30a24ec9c43fb128",
+    "analysis/indicators/__init__.py": "f7dc710838a619be9756c5278b14303200223bdf83e776138d03a598e5222e91",
+    "skills/market-volume/lib.py": "40a6b2ba211fd13bf4f6f7ebe1efccdc883449a6e3c530af9418a61b4b06b8e7",
+    "skills/market-trend/lib.py": "3da4944f6022162c1a67179fa0a3c4654f111ce9b17723ce578dfd1f7bd4be04",
+    "skills/market-s-r/lib.py": "21e7253de7182d0e28c55b38d09ee8d6cc0f24a44273cdbb502530545c0739b9",
+    "skills/market-breakout/lib.py": "b741326aba418a62b1617f521e6ea475c06890f83c310c029fe9ecd7bd54e1c5",
+    "skills/market-exhaustion/lib.py": "7d46ab5095bd6589714a75df700cc25accea1672d7af6d302de2a5bb115934c7",
+    "skills/market-squeeze/lib.py": "9bf21cfff4b99a106dac68363909f972acb3bfafc6db22f0452d124ec3653475",
+    "skills/market-volatility/lib.py": "09a6fc6ec7e1f932ba4cf290fb048860ad9a95fa499cc7018ac50577c71e34d3",
+    "skills/market-macd/lib.py": "615cf3d71ec66179f4500c90b49bb0b626c822d67d7d66b143d4754cee028495",
+    "skills/market-rsi/lib.py": "c2fba8ad07c5a025b1eeb35ff8d51fa5e9c127152f8e82889c97e8587f9d0a4c"
+  }
+}

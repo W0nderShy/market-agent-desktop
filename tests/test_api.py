@@ -16,12 +16,25 @@ def test_token_origin_and_watchlist_api(tmp_path):
     try:
         with httpx.Client(base_url=base, trust_env=False) as c:
             assert c.get('/api/status').status_code == 401
+            assert c.get('/api/tracking').status_code == 401
             headers = {'X-Monitor-Token':token}
             assert c.get('/api/status',headers={**headers,'Origin':'https://evil.invalid'}).status_code == 403
             assert c.get('/api/status',headers=headers).json()['watchlist'] == []
             assert c.put('/api/watchlist',headers=headers,json={'items':[ITEM]}).status_code == 200
             assert c.put('/api/watchlist',headers=headers,json={'items':[{'symbol':'BADUSDT','category':'SPOT'}]}).status_code == 400
             assert c.get('/api/instruments?category=SPOT&symbol=BTCUSDT',headers=headers).json()['items'][0]['symbol'] == 'BTCUSDT'
+            assert c.put('/api/tracking/configure',headers=headers,json={'category':'USDT-FUTURES','symbol':'ZECUSDT','enabled':'yes'}).status_code == 400
+            assert c.put('/api/tracking/configure',headers=headers,json={'category':'USDT-FUTURES','symbol':'ZECUSDT','enabled':True}).status_code == 200
+            assert c.get('/api/tracking',headers=headers).json()['tasks'][0]['enabled'] is True
+            assert c.get('/api/tracking/history?task=USDT-FUTURES%3AZECUSDT',headers=headers).json()['items'] == []
+            assert c.get('/api/tracking/history?task=USDT-FUTURES%3AZECUSDT').status_code == 401
+            assert c.get('/api/tracking/history?task=bad',headers=headers).status_code == 400
+            assert c.get('/api/wechat').status_code == 401
+            assert c.get('/api/wechat',headers=headers).json()['connected'] is False
+            assert c.put('/api/wechat/configure',headers=headers,json={'enabled':True}).status_code == 400
+            assert c.put('/api/wechat/configure',headers=headers,json={'cadence_hours':3}).json()['cadence_hours'] == 3
+            assert c.post('/api/wechat/login/status',headers=headers,json={}).json()['status']=='expired'
+            assert c.post('/api/tracking/complete',headers=headers,json={'id':'missing','lease':'missing','result':{}}).json()['accepted'] is False
             assert c.post('/api/poll',headers=headers).status_code == 202
             assert c.post('/api/shutdown',headers=headers).status_code == 202
             thread.join(timeout=3)

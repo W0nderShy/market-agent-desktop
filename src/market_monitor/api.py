@@ -65,8 +65,45 @@ def make_server(monitor, port=8765):
                 self.reply(401,{'error':'unauthorized'}); return
             route = urlparse(self.path)
             try:
-                if self.command == 'GET' and route.path == '/api/status':
+                if self.command == 'GET' and route.path == '/api/tracking':
+                    self.reply(200,monitor.tracking.status())
+                elif self.command == 'GET' and route.path == '/api/wechat':
+                    self.reply(200,monitor.wechat.status())
+                elif self.command == 'POST' and route.path == '/api/wechat/login':
+                    self.reply(200,monitor.wechat.start_login())
+                elif self.command in ('POST','PUT') and route.path.startswith('/api/wechat/'):
+                    length=int(self.headers.get('Content-Length','0'))
+                    if not 0<length<=4096:raise ValueError()
+                    body=json.loads(self.rfile.read(length))
+                    if not isinstance(body,dict):raise ValueError()
+                    if route.path=='/api/wechat/login/status':
+                        self.reply(200,monitor.wechat.poll_login(body.get('verify_code')))
+                    elif route.path=='/api/wechat/configure':
+                        self.reply(200,monitor.wechat.configure(body))
+                    else:self.reply(404,{'error':'not_found'})
+                elif self.command == 'GET' and route.path == '/api/tracking/history':
+                    query=parse_qs(route.query,keep_blank_values=True)
+                    if any(len(values)!=1 for values in query.values()) or set(query)-{'task','before','limit'}:raise ValueError()
+                    self.reply(200,monitor.tracking.history(query.get('task',[None])[0],query.get('before',[None])[0],int(query.get('limit',['10'])[0])))
+                elif self.command in ('POST','PUT') and route.path.startswith('/api/tracking/'):
+                    length=int(self.headers.get('Content-Length','0'))
+                    if not 0<length<=65536:raise ValueError()
+                    body=json.loads(self.rfile.read(length))
+                    if not isinstance(body,dict):raise ValueError()
+                    if route.path=='/api/tracking/configure':
+                        self.reply(200,monitor.tracking.configure(body))
+                    elif route.path=='/api/tracking/claim':
+                        self.reply(200,{'job':monitor.tracking.claim()})
+                    elif route.path=='/api/tracking/heartbeat':
+                        self.reply(200,monitor.tracking.heartbeat(body['id'],body['lease']))
+                    elif route.path=='/api/tracking/complete':
+                        self.reply(200,monitor.tracking.complete(body['id'],body['lease'],body.get('result'),body.get('error')))
+                    else:self.reply(404,{'error':'not_found'})
+                elif self.command == 'GET' and route.path == '/api/status':
                     self.reply(200,monitor.status())
+                elif self.command == 'GET' and route.path == '/api/markets':
+                    query = parse_qs(route.query)
+                    self.reply(200,{'items':monitor.feed.tickers(query.get('category',['USDT-FUTURES'])[0])})
                 elif self.command == 'GET' and route.path == '/api/instruments':
                     query = parse_qs(route.query)
                     self.reply(200,{'items':monitor.feed.instruments(query.get('category',['SPOT'])[0],query.get('symbol',[None])[0])})

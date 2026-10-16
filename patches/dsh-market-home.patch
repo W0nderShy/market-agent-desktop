@@ -73,6 +73,26 @@ index df48eb5903..ba6a66a898 100644
  [English](README.md) | 中文
  
  桌面应用是包裹 dsh Web UI 的 Electron 壳。它不打开监听端口：内置的上游 Node.js 子进程启动已安装的 dsh 项目，带版本的分帧字节管道在没有外层 Base64 信封的情况下承载 Fetch 请求与流式响应，Node IPC 承载生命周期控制，`dsh-app://` 则提供与后端版本匹配的客户端资源。
+diff --git a/apps/desktop/src/chart-context.ts b/apps/desktop/src/chart-context.ts
+new file mode 100644
+index 0000000000..a97c982b7a
+--- /dev/null
++++ b/apps/desktop/src/chart-context.ts
+@@ -0,0 +1,14 @@
++/** Validate and compact the exact chart visible in the terminal. */
++export function chartContext(value: unknown) {
++ const x=value as {symbol?:unknown;category?:unknown;interval?:unknown;capturedAt?:unknown;rows?:unknown}
++ if(!x||typeof x.symbol!=='string'||!/^[A-Z0-9]{1,40}$/.test(x.symbol)||!['SPOT','USDT-FUTURES','USDC-FUTURES','COIN-FUTURES'].includes(String(x.category))||!['1m','5m','15m','1H','4H','1D'].includes(String(x.interval))||typeof x.capturedAt!=='number'||!Number.isFinite(x.capturedAt)||!Array.isArray(x.rows)||!x.rows.length||x.rows.length>300)throw new Error('当前图表尚未就绪')
++ let previous=0
++ const candles=x.rows.map((row:unknown)=>{
++  const r=row as Record<string,unknown>;const values=['time','open','high','low','close','volume'].map(k=>r?.[k]);
++  if(!values.every(v=>typeof v==='number'&&Number.isFinite(v)))throw new Error('K 线数据无效')
++  const [t,o,h,l,c,v]=values as [number,number,number,number,number,number]
++  if(t<=previous||Math.min(o,h,l,c)<=0||v<0||h<Math.max(o,l,c)||l>Math.min(o,h,c))throw new Error('K 线数据无效')
++  previous=t;return [t,o,h,l,c,v]
++ })
++ return {symbol:x.symbol,category:x.category,interval:x.interval,capturedAt:x.capturedAt,latestCandleMayChange:true,count:candles.length,columns:['timeUnixSeconds','open','high','low','close','baseVolume'],candles}
++}
 diff --git a/apps/desktop/src/locale.ts b/apps/desktop/src/locale.ts
 index b666cfd559..4d9c14be2e 100644
 --- a/apps/desktop/src/locale.ts
@@ -98,18 +118,51 @@ index b666cfd559..4d9c14be2e 100644
    pluginsMenu: '桌面插件…',
    pluginsMenuPackagedOnly: '桌面插件…（打包应用中可用）',
 diff --git a/apps/desktop/src/main.ts b/apps/desktop/src/main.ts
-index 8bc9fdcefd..44da070d5f 100644
+index 8bc9fdcefd..0fb89df3fb 100644
 --- a/apps/desktop/src/main.ts
 +++ b/apps/desktop/src/main.ts
-@@ -19,6 +19,7 @@ import { DESKTOP_IPC, type DesktopUpdateState } from './ipc.ts'
+@@ -1,6 +1,6 @@
+ /** Electron shell: desktop project ownership, custom protocol, windows, and lifecycle. */
+ 
+-import { readFile, writeFile } from 'node:fs/promises'
++import { readFile, writeFile, rename } from 'node:fs/promises'
+ import { extname, join, normalize, resolve, sep } from 'node:path'
+ import { fileURLToPath } from 'node:url'
+ import {
+@@ -19,6 +19,11 @@ import { DESKTOP_IPC, type DesktopUpdateState } from './ipc.ts'
  import { formatDesktopMessage, resolveDesktopLocale } from './locale.ts'
  import { claimDesktopSingleInstance } from './single-instance.ts'
  import { DesktopUpdateCoordinator } from './update-coordinator.ts'
++import { TrackingWorker } from './tracking-worker.ts'
++import { TerminalEvents } from './terminal-events.ts'
++import { chartContext } from './chart-context.ts'
++import { agentOperation } from './terminal-agent.ts'
 +import { assertMarketSender, marketAsset, marketRequest } from './market-home.ts'
  
  const SCHEME = 'dsh-app'
  let focusPrimaryWindow = (): void => {}
-@@ -134,6 +135,8 @@ async function main(): Promise<void> {
+@@ -79,13 +84,19 @@ function developmentHostInspectPort(enabled: boolean): number | undefined {
+   return port
+ }
+ 
+-function createWindow(preload: string): BrowserWindow {
++function createWindow(preload: string, seamless = false): BrowserWindow {
+   const window = new BrowserWindow({
+     width: 1280,
+     height: 840,
+     minWidth: 880,
+     minHeight: 600,
+     show: false,
++    ...(seamless ? {
++      titleBarStyle: 'hidden' as const,
++      titleBarOverlay: { color: '#181818', symbolColor: '#b7b7b7', height: 48 },
++      backgroundColor: '#181818',
++      autoHideMenuBar: true,
++    } : {}),
+     webPreferences: {
+       preload,
+       nodeIntegration: false,
+@@ -134,11 +145,15 @@ async function main(): Promise<void> {
    const resources = runtimeResources()
    const paths = resolveDesktopPaths()
    const development = developmentProject()
@@ -118,7 +171,14 @@ index 8bc9fdcefd..44da070d5f 100644
    const activeProject = development ?? paths.profile
    const hostInspectPort = developmentHostInspectPort(development !== undefined)
    const manager = new DesktopProjectManager(paths, resources)
-@@ -223,6 +226,18 @@ async function main(): Promise<void> {
+   if (development === undefined) manager.recover()
+   let host: DesktopHostProcess | undefined
++  let trackingWindow: BrowserWindow | undefined
++  let trackingSelection={symbol:'ZECUSDT',category:'USDT-FUTURES'}
+   let mainWindow: BrowserWindow | undefined
+   let pluginWindow: BrowserWindow | undefined
+   let shellInstallerOwnsQuit = false
+@@ -223,6 +238,18 @@ async function main(): Promise<void> {
  
    protocol.handle(SCHEME, (request) => {
      const url = new URL(request.url)
@@ -128,7 +188,7 @@ index 8bc9fdcefd..44da070d5f 100644
 +      if (asset === undefined) return Promise.resolve(new Response(null, { status: 404 }))
 +      return readFile(join(marketRoot, 'desktop', asset)).then(body => new Response(request.method === 'HEAD' ? null : body, {
 +        headers: {
-+          'content-type': MIME[extname(asset)] ?? 'application/octet-stream',
++          'cache-control': 'no-store', 'content-type': MIME[extname(asset)] ?? 'application/octet-stream',
 +          'content-security-policy': "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'none'; img-src 'self' data:; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'",
 +          'x-content-type-options': 'nosniff',
 +        },
@@ -137,15 +197,132 @@ index 8bc9fdcefd..44da070d5f 100644
      if (url.hostname === 'shell') return serveShellAsset(request)
      if (url.hostname !== 'app') return Promise.resolve(new Response(null, { status: 404 }))
      const active = host
-@@ -242,6 +257,30 @@ async function main(): Promise<void> {
+@@ -242,6 +269,147 @@ async function main(): Promise<void> {
      assertDesktopSender(event, ['shell'])
      return locale
    })
++  let terminalSession: string | undefined
++  let agentBusy = false
++  let contextWrite: Promise<void> = Promise.resolve()
++  const agentRpc = async (method: string, args: Record<string, unknown>): Promise<unknown> => {
++    if (!host) throw new Error('dsh 服务未连接')
++    const response = await host.fetch(new Request(`dsh-app://app/api/${method}`, {
++      method: 'POST', headers: {'content-type':'application/json'},
++      body: JSON.stringify({type:'client-request',rpcId:crypto.randomUUID(),method,payload:{args}}),
++      signal: AbortSignal.timeout(30000),
++    }))
++    if (!response.ok) throw new Error('dsh 请求失败')
++    const body = await response.json() as {result:{ok:boolean;value?:unknown;error?:{code:string}}}
++    if (!body.result.ok) throw new Error(`dsh: ${body.result.error?.code ?? 'request_failed'}`)
++    return body.result.value
++  }
++  const followSession=async (sessionId:string):Promise<unknown>=>{
++          if(!host)throw new Error('dsh 服务未连接')
++          const abort=new AbortController()
++          const timer=setTimeout(()=>abort.abort(),15000)
++          let reader: ReadableStreamDefaultReader<Uint8Array> | undefined
++          try {
++            const response=await host.fetch(new Request('dsh-app://app/.dsh/remote-stream',{
++              method:'POST',headers:{'content-type':'application/json'},signal:abort.signal,
++              body:JSON.stringify({endpoint:'session/follow',payload:{args:{request:{address:{kind:'session',sessionId:sessionId},maxMessages:50,assistantStream:true}}}}),
++            }))
++            if(!response.ok || !response.body)throw new Error('会话读取失败')
++            reader=response.body.getReader();let text='';const decoder=new TextDecoder()
++            while(!text.includes('\n')){const part=await reader.read();if(part.done)throw new Error('会话读取中断');text+=decoder.decode(part.value,{stream:true});if(text.length>4000000)throw new Error('会话过大')}
++            return JSON.parse(text.split('\n')[0] ?? '{}') as unknown
++          } finally {clearTimeout(timer);await reader?.cancel().catch(()=>undefined);abort.abort()}
++  }
++  const trackingWorker=marketRoot?new TrackingWorker(marketRoot,agentRpc,followSession):undefined
++  trackingWorker?.start()
++  app.on('before-quit',()=>trackingWorker?.stop())
++  const terminalEvents=new TerminalEvents(request=>{if(!host)throw new Error('dsh unavailable');return host.fetch(request)},agentRpc)
++  const restoreTerminal = async (): Promise<void> => {
++    if(terminalSession || !marketRoot)return
++    try { const saved=JSON.parse(await readFile(join(marketRoot,'runtime','agent-session.json'),'utf8')) as {sessionId?:string}
++      if(typeof saved.sessionId==='string')terminalSession=saved.sessionId
++    } catch { /* First launch has no saved terminal session. */ }
++  }
 +  ipcMain.handle('market:request', async (event, action: unknown, payload: unknown) => {
-+    assertMarketSender(event, mainWindow?.webContents)
++    const trackingSender=trackingWindow&&!trackingWindow.isDestroyed()&&event.sender===trackingWindow.webContents
++    if(trackingSender){
++      assertMarketSender(event,trackingWindow?.webContents,'dsh-app://market/tracking.html')
++      if(!['tracking','tracking-history','tracking-configure','tracking-selection','wechat','wechat-login','wechat-login-status','wechat-configure'].includes(String(action)))throw Error('tracking window: unsupported operation')
++      if(action==='tracking-selection')return {ok:true,data:trackingSelection}
++    }else assertMarketSender(event, mainWindow?.webContents)
++    if(action==='tracking-window'){
++      const data=(payload??{}) as {symbol?:string;category?:string}
++      marketRequest('instruments',data)
++      trackingSelection={symbol:data.symbol||'ZECUSDT',category:data.category||'USDT-FUTURES'}
++      if(!trackingWindow||trackingWindow.isDestroyed()){
++        const window=new BrowserWindow({width:600,height:860,minWidth:440,minHeight:480,show:false,title:'持续跟踪 · Trading Terminal',backgroundColor:'#151a22',titleBarStyle:'hidden',titleBarOverlay:{color:'#1b2431',symbolColor:'#dbe5f4',height:48},autoHideMenuBar:true,webPreferences:{preload:appPreload,nodeIntegration:false,contextIsolation:true,sandbox:true,webSecurity:true}})
++        trackingWindow=window;window.setMenuBarVisibility(false)
++        window.webContents.setWindowOpenHandler(()=>({action:'deny'}))
++        window.webContents.on('will-navigate',(event,url)=>{if(url!=='dsh-app://market/tracking.html')event.preventDefault()})
++        window.on('closed',()=>{if(trackingWindow===window)trackingWindow=undefined})
++        window.once('ready-to-show',()=>{if(!window.isDestroyed())window.show()})
++        await window.loadURL('dsh-app://market/tracking.html')
++      }
++      if(trackingWindow.isMinimized())trackingWindow.restore()
++      trackingWindow.show();trackingWindow.focus()
++      return {ok:true,data:{opened:true}}
++    }
 +    if (marketRoot === undefined) throw new Error('market desktop: disabled')
++    if (typeof action === 'string' && action.startsWith('agent-')) {
++      try {
++        await restoreTerminal()
++        await terminalEvents.start()
++        if(action==='agent-interactions')return {ok:true,data:terminalEvents.list()}
++        if(action==='agent-answer')return {ok:true,data:await terminalEvents.answer(payload)}
++        if(action==='agent-context'){
++          const context=payload===null?{available:false}:chartContext(payload)
++          const target=join(marketRoot,'runtime','market-context.json')
++          contextWrite=contextWrite.catch(()=>undefined).then(async()=>{await writeFile(target+'.tmp',JSON.stringify(context),'utf8');await rename(target+'.tmp',target)})
++          await contextWrite
++          return {ok:true,data:{synced:true}}
++        }
++
++        if(action==='agent-read') {
++          if(!terminalSession)return {ok:true,data:null}
++          return {ok:true,data:await followSession(terminalSession)}
++        }
++        if(action==='agent-create'){
++          if(agentBusy)throw new Error('操作进行中')
++          agentBusy=true
++          try {
++            const created=await agentRpc('session/create',{request:{cwd:join(marketRoot,'runtime')}}) as {sessionId:string}
++            const data=(payload ?? {}) as {provider?:string;model?:string}
++            if(typeof data.provider!=='string'||typeof data.model!=='string')throw new Error('请选择模型')
++            const catalog=await agentRpc('session/modelCatalog',{}) as {groups:{id:string;name:string;models:{id:string}[]}[]}
++            if(!catalog.groups.some(g=>/deepseek/i.test(g.id+' '+g.name)&&g.id===data.provider&&g.models.some(m=>m.id===data.model)))throw new Error('请选择 DeepSeek 官方模型')
++            await agentRpc('session/selectModel',{request:{sessionId:created.sessionId,provider:data.provider,model:data.model}})
++            await writeFile(join(marketRoot,'runtime','agent-session.json'),JSON.stringify({sessionId:created.sessionId}),'utf8')
++            terminalSession=created.sessionId
++            return {ok:true,data:{sessionId:terminalSession}}
++          } finally {agentBusy=false}
++        }
++        const spec=agentOperation(action,payload,terminalSession)
++        if(action==='agent-send'){
++          try{
++            const token=(await readFile(join(marketRoot,'runtime','api-token'),'utf8')).trim()
++            const response=await fetch('http://127.0.0.1:8765/api/tracking',{headers:{'X-Monitor-Token':token},signal:AbortSignal.timeout(2000),redirect:'error'})
++            if(response.ok){
++              const state=await response.json() as {tasks:Record<string,unknown>[]}
++              const chart=(payload as {chart?:{symbol:string;category:string}})?.chart
++              const task=state.tasks.find(t=>t.symbol===chart?.symbol&&t.category===chart?.category)
++              if(task){
++                const request=spec.args.request as {content:{type:string;text:string}[]}
++                const block=request.content[1]
++                if(block)block.text+='\n[该标的独立跟踪任务：可能与图表周期不同，以 interval 为准；研究状态是历史判断，非当前事实。用户若要修改研究目标可在持续跟踪面板保存研究方向。]\n'+JSON.stringify({symbol:task.symbol,interval:task.interval,enabled:task.enabled,phase:task.phase,previous:task.previous,note:task.note,last_research:task.last_research})
++              }
++            }
++          }catch{/* Chat remains available while the tracking service reconnects. */}
++        }
++        return {ok:true,data:await agentRpc(spec.method,spec.args)}
++      } catch(error) {return {ok:false,error:action==='agent-key'?'密钥保存失败，请检查 dsh 配置':error instanceof Error?error.message:'Agent 请求失败'}}
++    }
++
 +    if (action === 'conversation') {
-+      await mainWindow?.loadURL(`${SCHEME}://app/index.html`)
++      await mainWindow?.loadURL(homePage)
 +      return { ok: true }
 +    }
 +    const spec = marketRequest(action, payload)
@@ -155,7 +332,7 @@ index 8bc9fdcefd..44da070d5f 100644
 +        method: spec.method,
 +        headers: { 'X-Monitor-Token': token, 'Content-Type': 'application/json' },
 +        ...(spec.body === undefined ? {} : { body: JSON.stringify(spec.body) }),
-+        signal: AbortSignal.timeout(30_000),
++        signal: AbortSignal.timeout(action==='wechat-login-status'?40_000:30_000),
 +        redirect: 'error',
 +      })
 +      const data: unknown = await response.json()
@@ -168,16 +345,41 @@ index 8bc9fdcefd..44da070d5f 100644
    ipcMain.handle(DESKTOP_IPC.pluginsList, (event) => {
      assertDesktopSender(event, ['shell'])
      if (development !== undefined) return []
-@@ -328,6 +367,8 @@ async function main(): Promise<void> {
+@@ -328,6 +496,7 @@ async function main(): Promise<void> {
    Menu.setApplicationMenu(Menu.buildFromTemplate([{
      label: process.platform === 'darwin' ? app.name : messages.application,
      submenu: [
-+      { label: messages.marketHome, visible: marketRoot !== undefined, click: () => { void mainWindow?.loadURL(homePage) } },
-+      { label: messages.marketConversation, visible: marketRoot !== undefined, click: () => { void mainWindow?.loadURL(`${SCHEME}://app/index.html`) } },
++      { label: messages.marketHome, accelerator: 'CmdOrCtrl+Shift+M', visible: marketRoot !== undefined, click: () => { void mainWindow?.loadURL(homePage) } },
        {
          label: development === undefined ? messages.pluginsMenu : messages.pluginsMenuPackagedOnly,
          accelerator: 'CmdOrCtrl+,',
-@@ -351,7 +392,7 @@ async function main(): Promise<void> {
+@@ -341,8 +510,24 @@ async function main(): Promise<void> {
+   }]))
+ 
+   const createMainWindow = (): BrowserWindow => {
+-    const window = createWindow(appPreload)
++    const window = createWindow(appPreload, marketRoot !== undefined)
+     mainWindow = window
++    if (marketRoot !== undefined) {
++      window.setMenuBarVisibility(false)
++      window.webContents.on('did-finish-load', () => {
++        // The market page owns its title region; upstream pages need a reserved strip.
++        if (new URL(window.webContents.getURL()).hostname === 'market') return
++        void window.webContents.insertCSS(`
++          html { padding-top: 48px !important; box-sizing: border-box; }
++          body { height: calc(100vh - 48px) !important; }
++          html::before { content: 'dsh  ·  Ctrl+Shift+M 行情终端'; position: fixed;
++            inset: 0 0 auto 0; height: 48px; padding: 0 160px 0 20px;
++            display: flex; align-items: center; background: #181818; color: #aaa;
++            font: 12px "Segoe UI", sans-serif; z-index: 2147483647;
++            -webkit-app-region: drag; box-sizing: border-box; }
++        `).catch(() => undefined)
++      })
++    }
+     window.once('ready-to-show', () => { if (!window.isDestroyed()) window.show() })
+     window.on('closed', () => { if (mainWindow === window) mainWindow = undefined })
+     return window
+@@ -351,7 +536,7 @@ async function main(): Promise<void> {
      const window = mainWindow
      if (window === undefined || window.isDestroyed()) {
        const replacement = createMainWindow()
@@ -186,7 +388,7 @@ index 8bc9fdcefd..44da070d5f 100644
        return
      }
      if (window.isMinimized()) window.restore()
-@@ -360,7 +401,7 @@ async function main(): Promise<void> {
+@@ -360,7 +545,7 @@ async function main(): Promise<void> {
    }
  
    mainWindow = createMainWindow()
@@ -197,14 +399,14 @@ index 8bc9fdcefd..44da070d5f 100644
    }
 diff --git a/apps/desktop/src/market-home.ts b/apps/desktop/src/market-home.ts
 new file mode 100644
-index 0000000000..41218ebb60
+index 0000000000..d300604d29
 --- /dev/null
 +++ b/apps/desktop/src/market-home.ts
-@@ -0,0 +1,75 @@
+@@ -0,0 +1,106 @@
 +/** Development market homepage: fixed asset and loopback API allowlists. */
 +
 +const PAGE = 'dsh-app://market/index.html'
-+const ASSETS = new Set(['index.html', 'style.css', 'renderer.js', 'chart.js'])
++const ASSETS = new Set(['index.html', 'style.css', 'renderer.js', 'chart.js', 'chat-view.js', 'market-tracking-view.js', 'tracking.html', 'tracking.js'])
 +const CATEGORIES = new Set(['SPOT', 'USDT-FUTURES', 'USDC-FUTURES', 'COIN-FUTURES'])
 +
 +/** Resolve an owned asset; arbitrary files and other origins have no mapping.
@@ -225,8 +427,9 @@ index 0000000000..41218ebb60
 +export function assertMarketSender(
 +  event: { sender: unknown; senderFrame: { url: string } | null },
 +  owner: { mainFrame: unknown } | undefined,
++  page = PAGE,
 +): void {
-+  if (!owner || event.sender !== owner || event.senderFrame !== owner.mainFrame || event.senderFrame?.url !== PAGE) {
++  if (!owner || event.sender !== owner || event.senderFrame !== owner.mainFrame || event.senderFrame?.url !== page) {
 +    throw new Error('market desktop: unauthorized frame')
 +  }
 +}
@@ -234,7 +437,7 @@ index 0000000000..41218ebb60
 +interface RequestSpec {
 +  method: 'GET' | 'POST' | 'PUT'
 +  path: string
-+  body?: { items: { symbol: string; category: string }[] }
++  body?: Record<string,unknown>
 +}
 +
 +function object(value: unknown): Record<string, unknown> {
@@ -259,8 +462,38 @@ index 0000000000..41218ebb60
 + * @returns Fixed method, route and optional reduced watchlist body.
 + */
 +export function marketRequest(action: unknown, payload?: unknown): RequestSpec {
++  if(action==='wechat')return {method:'GET',path:'/api/wechat'}
++  if(action==='wechat-login')return {method:'POST',path:'/api/wechat/login'}
++  if(action==='wechat-login-status'){
++    const data=object(payload??{})
++    if(data.verify_code!==undefined&&(typeof data.verify_code!=='string'||!/^\d{1,10}$/.test(data.verify_code)))throw Error('invalid verify code')
++    return {method:'POST',path:'/api/wechat/login/status',body:data.verify_code===undefined?{}:{verify_code:data.verify_code}}
++  }
++  if(action==='wechat-configure'){
++    const data=object(payload)
++    if(Object.keys(data).some(key=>!['enabled','cadence_hours'].includes(key))||
++       (data.enabled!==undefined&&typeof data.enabled!=='boolean')||
++       (data.cadence_hours!==undefined&&(!Number.isInteger(data.cadence_hours)||Number(data.cadence_hours)<1||Number(data.cadence_hours)>24)))throw Error('invalid wechat configuration')
++    return {method:'PUT',path:'/api/wechat/configure',body:data}
++  }
++  if(action==='tracking')return {method:'GET',path:'/api/tracking'}
++  if(action==='tracking-history'){
++    const data=object(payload),selected=instrument(data)
++    if(data.before!==undefined&&(typeof data.before!=='string'||!/^[0-9]+(?:\.[0-9]+)?\|[A-Za-z0-9-]{1,64}$/.test(data.before)))throw Error('invalid history cursor')
++    const query=new URLSearchParams({task:selected.category+':'+selected.symbol,limit:'10'})
++    if(data.before!==undefined)query.set('before',data.before)
++    return {method:'GET',path:'/api/tracking/history?'+query}
++  }
++  if(action==='tracking-configure'){
++    const data=object(payload),selected=instrument(data)
++    if(typeof data.enabled!=='boolean')throw Error('invalid tracking switch')
++    if(data.interval!==undefined&&(typeof data.interval!=='string'||!/^(1m|5m|15m|1H|4H|1D)$/.test(data.interval)))throw Error('invalid interval')
++    if(data.note!==undefined&&(typeof data.note!=='string'||data.note.length>2000))throw Error('invalid note')
++    return {method:'PUT',path:'/api/tracking/configure',body:{...selected,enabled:data.enabled,...(data.interval===undefined?{}:{interval:data.interval}),...(data.note===undefined?{}:{note:data.note})}}
++  }
 +  if (action === 'status') return { method: 'GET', path: '/api/status' }
 +  if (action === 'poll') return { method: 'POST', path: '/api/poll' }
++  if (action === 'markets') return { method: 'GET', path: `/api/markets?${new URLSearchParams({category:instrument(payload ?? {}, true).category})}` }
 +  if (action === 'instruments') return { method: 'GET', path: `/api/instruments?${new URLSearchParams(instrument(payload ?? {}, true))}` }
 +  if (action === 'candles') {
 +    const data = object(payload)
@@ -277,7 +510,7 @@ index 0000000000..41218ebb60
 +  throw new Error('market desktop: unsupported operation')
 +}
 diff --git a/apps/desktop/src/preload-app.ts b/apps/desktop/src/preload-app.ts
-index c6a839aba6..41bb13b2e4 100644
+index c6a839aba6..bf58e7c600 100644
 --- a/apps/desktop/src/preload-app.ts
 +++ b/apps/desktop/src/preload-app.ts
 @@ -1,5 +1,10 @@
@@ -287,23 +520,215 @@ index c6a839aba6..41bb13b2e4 100644
 +import { contextBridge, ipcRenderer } from 'electron'
  
  contextBridge.exposeInMainWorld('dshDesktop', { protocolVersion: 1 })
-+if (location.href === 'dsh-app://market/index.html') {
++if (['dsh-app://market/index.html','dsh-app://market/tracking.html'].includes(location.href)) {
 +  contextBridge.exposeInMainWorld('monitor', Object.freeze({
 +    request: (action: unknown, payload?: unknown): Promise<unknown> => ipcRenderer.invoke('market:request', action, payload),
 +  }))
 +}
+diff --git a/apps/desktop/src/terminal-agent.ts b/apps/desktop/src/terminal-agent.ts
+new file mode 100644
+index 0000000000..3e4d762a99
+--- /dev/null
++++ b/apps/desktop/src/terminal-agent.ts
+@@ -0,0 +1,29 @@
++/** Narrow terminal operations over the existing dsh Host. */
++import { chartContext } from './chart-context.ts'
++import { randomUUID } from 'node:crypto'
++/** Terminal-specific editorial guidance, refreshed on every user turn. */
++const analystVoice = `[终端分析师表达要求]
++你是与用户共同研究市场的专业分析师。使用自然、准确、克制的中文，提供经过取舍的判断，不把工具日志或指标清单当成答案。遵循用户本轮对篇幅、格式和分析范围的明确要求。
++先直接回答用户的问题，给出当前判断和适用的标的、周期；随后用最相关的两三条证据解释判断，并在必要时说明反证或改变判断的条件。按问题组织连贯段落，不机械套用固定栏目；用户要求深入研究时可以充分展开。
++技术分析时按需读取并执行已安装的金融 Skill，用计算结果支撑论证。不要逐项复述五个 Skill，也不要默认展示原始字段、评分、完整指标表或执行命令。工具失败或数据缺失时直说，不冒充已完成计算。
++清楚区分已核实事实、外部来源转述与自己的推断。时间吻合不能直接证明因果；缩量不能单独证明无人承接；单次跌幅之比不能称为统计 beta。启发式评分不等于概率；没有可靠模型或统计依据，不编造情景概率或精确目标价。
++使用新闻前核对事件日期、时区和是否已经发生；历史快照不可冒充当前数据。未收盘 K 线的成交量不可直接与完整 K 线比较并据此宣称极度缩量。只有确实相关且核实的信息才进入正文，来源贴近对应论点。
++避免煽动性措辞（如市场已经否决、致命弱点、方向钥匙）和过度确定的断言。不要重复结论、堆免责声明、每次结尾主动推销下一份报告，或罗列未被询问的操作限制。仅在影响判断时简明说明数据局限。无需复述这些表达要求。
++`
++export function agentOperation(action: string, payload: unknown, sessionId?: string): {method:string;args:Record<string,unknown>} {
++ const data=(payload && typeof payload==='object'?payload:{}) as Record<string,unknown>
++ if(action==='agent-status')return {method:'credentials/describe',args:{refs:['DEEPSEEK_API_KEY']}}
++ if(action==='agent-models')return {method:'session/modelCatalog',args:{}}
++ if(action==='agent-key'){
++  if(typeof data.key!=='string'||!data.key.trim()||data.key.length>4096)throw new Error('请输入有效密钥')
++  return {method:'credentials/set',args:{ref:'DEEPSEEK_API_KEY',value:data.key.trim()}}
++ }
++ if(!sessionId)throw new Error('会话尚未创建')
++ if(action==='agent-skills')return {method:'skills/list',args:{request:{sessionId}}}
++ if(action==='agent-cancel')return {method:'session/cancel',args:{request:{sessionId}}}
++ if(action==='agent-send'){
++  if(typeof data.text!=='string'||!data.text.trim()||data.text.length>20000)throw new Error('消息长度需为 1–20000 字符')
++  return {method:'session/prompt',args:{request:{sessionId,requestId:randomUUID(),mode:'queue',content:[{type:'text',text:data.text},{type:'text',text:analystVoice + (data.chart ? '[当前图表上下文：以本次快照为准，历史对话中的标的可能不同。时间单位见 columns，最后一根未必收盘。]\n'+JSON.stringify(chartContext(data.chart))+'\n分析过程中可用 read 工具读取工作目录下 market-context.json 获取当前图表最新快照。可按需使用 web_search、web_fetch 搜集外部信息；引用时区分行情事实与推断。' : '[当前图表未就绪，不得假称看到了 K 线。]')}]}}}
++ }
++ throw new Error('不支持的 Agent 操作')
++}
+diff --git a/apps/desktop/src/terminal-events.ts b/apps/desktop/src/terminal-events.ts
+new file mode 100644
+index 0000000000..dc1fb81c8d
+--- /dev/null
++++ b/apps/desktop/src/terminal-events.ts
+@@ -0,0 +1,44 @@
++/** Own dsh interaction events; approvals are answered only by an explicit UI action. */
++type Frame={type:string;clientId?:string;eventId?:string;event?:string;agentId?:string;request?:Record<string,unknown>}
++export class TerminalEvents {
++ private task: Promise<void>|undefined
++ private clientId: string|undefined
++ private pending=new Map<string,Frame>()
++ private ready: Promise<void>|undefined
++ constructor(private fetcher:(request:Request)=>Promise<Response>,private rpc:(method:string,args:Record<string,unknown>)=>Promise<unknown>){}
++ async start(){
++  if(!this.task){
++   let resolveReady!:()=>void
++   this.ready=new Promise<void>(resolve=>{resolveReady=resolve})
++   this.task=this.pump(resolveReady).catch(()=>undefined).finally(()=>{this.clientId=undefined;this.pending.clear();this.task=undefined;resolveReady()})
++  }
++  await this.ready
++  if(!this.clientId)throw new Error('dsh 交互连接不可用')
++ }
++ list(){return [...this.pending.values()]}
++ async answer(payload:unknown){
++  const data=payload as {eventId?:string;value?:unknown};const event=this.pending.get(data?.eventId??'')
++  if(!event||!this.clientId)throw new Error('请求已过期')
++  if(event.event==='approval/request'&&!['allowed-once','rejected'].includes(String(data.value)))throw new Error('无效审批结果')
++  if(event.event==='user-questions/request'&&(!data.value||typeof data.value!=='object'||!Array.isArray((data.value as {answers?:unknown}).answers)))throw new Error('无效回答')
++  await this.rpc('$events/result',{clientId:this.clientId,eventId:event.eventId,outcome:{kind:'result',value:data.value}})
++  this.pending.delete(event.eventId!)
++  return {answered:true}
++ }
++ private async pump(ready:()=>void){
++  const abort=new AbortController();const timer=setTimeout(()=>abort.abort(),15000)
++  const response=await this.fetcher(new Request('dsh-app://app/.dsh/remote-stream',{method:'POST',headers:{'content-type':'application/json'},signal:abort.signal,body:JSON.stringify({endpoint:'$events',payload:{args:{}}})}))
++  if(!response.ok||!response.body)throw new Error('事件连接失败')
++  const reader=response.body.getReader(),decoder=new TextDecoder();let pending=''
++  try{for(;;){const part=await reader.read();if(part.done)break;pending+=decoder.decode(part.value,{stream:true});let newline
++   while((newline=pending.indexOf('\n'))>=0){const line=pending.slice(0,newline);pending=pending.slice(newline+1);if(!line)continue;const frame=JSON.parse(line) as Frame
++    if(frame.type==='ready'){this.clientId=frame.clientId;clearTimeout(timer);ready()}
++    else if(frame.type==='cancel'&&frame.eventId)this.pending.delete(frame.eventId)
++    else if(frame.type==='waterfall'&&frame.eventId){
++     if(frame.event==='approval/request'||frame.event==='user-questions/request')this.pending.set(frame.eventId,frame)
++     else await this.rpc('$events/result',{clientId:this.clientId,eventId:frame.eventId,outcome:{kind:'next'}})
++    }
++   }
++  }}finally{clearTimeout(timer);await reader.cancel().catch(()=>undefined);abort.abort()}
++ }
++}
+diff --git a/apps/desktop/src/tracking-worker.ts b/apps/desktop/src/tracking-worker.ts
+new file mode 100644
+index 0000000000..3ba0d75973
+--- /dev/null
++++ b/apps/desktop/src/tracking-worker.ts
+@@ -0,0 +1,88 @@
++/** Single leased research worker, isolated from the interactive terminal session. */
++import { readFile } from 'node:fs/promises'
++import { join } from 'node:path'
++
++type Rpc = (method:string,args:Record<string,unknown>)=>Promise<unknown>
++type Job = {id:string;lease:string;context:Record<string,unknown>}
++type Event = {type?:string;data?:{reason?:{kind?:string};message?:{content?:{type:string;text?:string}[]}}}
++export function finalResearch(snapshot:{records?:{event?:Event}[]}):string|undefined {
++ const events=(snapshot.records??[]).map(r=>r.event).filter((e):e is Event=>Boolean(e))
++ const end=[...events].reverse().find(e=>e.type==='turn/end')
++ if(!end)return undefined
++ if(end.data?.reason?.kind!=='completed')throw Error('research_failed')
++ const message=[...events].reverse().find(e=>e.type==='assistant/message')
++ const blocks=message?.data?.message?.content??[]
++ if(blocks.some(b=>b.type==='tool-call'))throw Error('unexpected_tool')
++ const text=blocks.filter(b=>b.type==='text').map(b=>b.text??'').join('\n')
++ if(!text)throw Error('missing_result')
++ return text
++}
++export function parseResearch(text:string):Record<string,unknown>{
++ const cleaned=text.trim().replace(/^```(?:json)?\s*/,'').replace(/\s*```$/,'')
++ if(cleaned.length>16000)throw Error('oversized_result')
++ const result:unknown=JSON.parse(cleaned)
++ if(!result||typeof result!=='object'||Array.isArray(result))throw Error('invalid_result')
++ return result as Record<string,unknown>
++}
++
++export function buildResearchPrompt(context:Record<string,unknown>):string {
++ return `你是长期资产追踪分析师，持续维护可修订的判断。本任务没有固定轮次或单日研究配额。按用户的长期追踪 role 依次审视：宏观金融环境、跨资产传导、资产基本面与客户资本开支、估值和叙事、反身性与泡沫、背离、量价结构、相对上次判断的边际变化。先识别证据来源和时间，再作判断；未知就是未知。
++输入中的 metrics.results 是已运行的五项量价 skill：market-trend、market-volume、market-s-r、market-breakout、market-exhaustion。逐项阅读其有效信号和局限，将它们交叉核验，不把分数当概率，也不能把任一技术标签直接映射为 BUY 或 SELL。比较 horizons 的 1H、4H、1D 与监测周期，短周期只用于候选变化。Bitget 公开 K 线只能验证价格与成交量；external_evidence 只代表列出的来源，不能推断未提供的新闻、财报、客户投资或估值。用户备注仅作待检验问题。
++输入中的 probabilities 由已收盘历史 K 线独立计算，BUY/SELL/HOLD 三项合计 100%，含义是未来指定窗口的涨/跌/震荡历史条件占比。它不是你的主观信心、已校准未来概率或交易盈亏胜率；不能据此伪称长期判断已确认，也不要在回答中自行改写百分比。
++对当前研究给出 action：buy、hold、sell、insufficient 四选一。区分两层判断：长期周期判断需要宏观、跨资产、基本面等证据；量价战术判断可以根据已收盘 K 线、五项技能和多周期结构给出 BUY/SELL，无需等待基本面全部接入。量价有明确方向和可验证失效条件时直接判断，不因外部维度缺失自动 HOLD；五项技能不必全都同向，但要权衡主要反证。如果仅有量价依据，结论明确限定为战术层面，不能声称已确认长期正反馈。HOLD 也须有具体理由；只有量价互相矛盾或输入不足以建立方向时才用 insufficient。此为研究判断，不下单，不假定用户仓位、成本或风险偏好。若长期阶段的关键证据缺失，cycle_state 为 undetermined。
++恢复时先复盘 coverage 中断区间及 previous，指出判断维持、加强、削弱或推翻。先给一句结论和下一步核验建议，summary 只解释两三条决定性证据、主要反证与缺口，不罗列全部指标；日期用北京时间，不输出输入字段名、Unix 时间戳或补充指令。
++仅输出 JSON，字段：action（buy/hold/sell/insufficient）, action_reason（一句话说明判断依据或缺失证据）, conclusion（一句话结论，最多 80 个汉字）, recommendation（一句话下一步核验建议，最多 100 个汉字）, summary（中文分析，100–250 字）, evidence（最多 3 条关键事实）, bias（bullish/bearish/neutral）, invalidation（判断失效条件）, cycle_state（early_recovery/fundamental_confirmation/full_flywheel/narrative_expansion/bubble_formation/narrative_divergence/fundamental_divergence/cycle_deterioration/undetermined）, thesis（持续追踪的核心判断）, change_vs_previous（与上次相比的边际变化）, confirmations（支持事实）, contradictions（反证）, unknowns（缺失证据）, upper/lower（可选观察位，不是目标价）。
++`+JSON.stringify(context)
++}
++
++export class TrackingWorker {
++ private busy=false
++ private stopped=false
++ private session:string|undefined
++ private timer:ReturnType<typeof setInterval>|undefined
++ constructor(private root:string,private rpc:Rpc,private follow:(id:string)=>Promise<unknown>){}
++ start():void {this.timer=setInterval(()=>{void this.pump()},5000);this.timer.unref()}
++ stop():void {this.stopped=true;if(this.timer)clearInterval(this.timer);if(this.session)void this.rpc('session/cancel',{request:{sessionId:this.session}}).catch(()=>undefined)}
++ private async api(path:string,body:Record<string,unknown>):Promise<Record<string,unknown>>{
++  const token=(await readFile(join(this.root,'runtime','api-token'),'utf8')).trim()
++  const response=await fetch('http://127.0.0.1:8765/api/tracking/'+path,{method:'POST',headers:{'Content-Type':'application/json','X-Monitor-Token':token},body:JSON.stringify(body),signal:AbortSignal.timeout(15000),redirect:'error'})
++  if(!response.ok)throw Error('tracking_unavailable')
++  return await response.json() as Record<string,unknown>
++ }
++ private async pump():Promise<void>{
++  if(this.busy||this.stopped)return
++  this.busy=true;let job:Job|undefined
++  try {
++   // Claim also advertises worker liveness, without accessing the credential value.
++   const claimed=await this.api('claim',{})
++   job=claimed.job as Job|undefined
++   if(!job)return
++   const credentials=await this.rpc('credentials/describe',{refs:['DEEPSEEK_API_KEY']}) as {DEEPSEEK_API_KEY?:{configured:boolean}}
++   if(!credentials.DEEPSEEK_API_KEY?.configured)throw Error('model_unconfigured')
++   const catalog=await this.rpc('session/modelCatalog',{}) as {groups:{id:string;name:string;models:{id:string}[]}[]}
++   const group=catalog.groups.find(g=>g.id==='deepseek-official')
++   const model=group?.models.find(m=>/flash|chat/.test(m.id))??group?.models[0]
++   if(!group||!model)throw Error('model_unavailable')
++   const created=await this.rpc('session/create',{request:{cwd:join(this.root,'runtime'),agentPreset:'market-research'}}) as {sessionId:string}
++   this.session=created.sessionId
++   await this.rpc('session/selectModel',{request:{sessionId:this.session,provider:group.id,model:model.id}})
++   const prompt=buildResearchPrompt(job.context)
++   await this.rpc('session/prompt',{request:{sessionId:this.session,requestId:crypto.randomUUID(),mode:'queue',content:[{type:'text',text:prompt}]}})
++   const deadline=Date.now()+480000
++   while(!this.stopped&&Date.now()<deadline){
++    const health=await this.api('heartbeat',{id:job.id,lease:job.lease})
++    if(!health.active)throw Error('task_paused')
++    const snapshot=await this.follow(this.session) as Parameters<typeof finalResearch>[0]
++    const text=finalResearch(snapshot)
++    if(text!==undefined){await this.api('complete',{id:job.id,lease:job.lease,result:parseResearch(text)});return}
++    await new Promise(resolve=>setTimeout(resolve,3000))
++   }
++   throw Error('research_timeout')
++  }catch{
++   if(job)await this.api('complete',{id:job.id,lease:job.lease,error:'research_failed'}).catch(()=>undefined)
++  }finally{
++   if(this.session)await this.rpc('session/cancel',{request:{sessionId:this.session}}).catch(()=>undefined)
++   this.session=undefined;this.busy=false
++  }
++ }
++}
+diff --git a/apps/desktop/tests/chart-context.test.ts b/apps/desktop/tests/chart-context.test.ts
+new file mode 100644
+index 0000000000..3b8acddbb0
+--- /dev/null
++++ b/apps/desktop/tests/chart-context.test.ts
+@@ -0,0 +1,6 @@
++import {test} from 'node:test'
++import assert from 'node:assert/strict'
++import {chartContext} from '../src/chart-context.ts'
++const input={symbol:'ZECUSDT',category:'USDT-FUTURES',interval:'15m',capturedAt:1000,rows:[{time:1,open:2,high:4,low:1,close:3,volume:5}]}
++test('preserves every OHLCV field and chart identity',()=>{const c=chartContext(input);assert.deepEqual(c.candles,[[1,2,4,1,3,5]]);assert.equal(c.interval,'15m');assert.equal(c.latestCandleMayChange,true)})
++test('rejects missing, corrupt and oversized chart snapshots',()=>{assert.throws(()=>chartContext({...input,rows:[]}));assert.throws(()=>chartContext({...input,rows:Array(301).fill(input.rows[0])}));assert.throws(()=>chartContext({...input,rows:[{...input.rows[0],high:0}]}))})
 diff --git a/apps/desktop/tests/market-home.spec.ts b/apps/desktop/tests/market-home.spec.ts
 new file mode 100644
-index 0000000000..bc079a53fb
+index 0000000000..718a1fd547
 --- /dev/null
 +++ b/apps/desktop/tests/market-home.spec.ts
-@@ -0,0 +1,30 @@
+@@ -0,0 +1,38 @@
 +import { describe, expect, it } from 'vitest'
 +import { assertMarketSender, marketAsset, marketRequest } from '../src/market-home.ts'
 +
 +describe('market home restrictions', () => {
-+  it('serves only the four owned assets', () => {
++  it('serves only the owned assets', () => {
 +    expect(marketAsset('dsh-app://market/index.html')).toBe('index.html')
++    expect(marketAsset('dsh-app://market/market-tracking-view.js')).toBe('market-tracking-view.js')
 +    for (const url of ['dsh-app://market/api-token', 'dsh-app://app/index.html', 'dsh-app://market/%2e%2e%2fapi-token', 'https://market/index.html']) {
 +      expect(marketAsset(url)).toBeUndefined()
 +    }
@@ -322,9 +747,89 @@ index 0000000000..bc079a53fb
 +    expect(marketRequest('poll')).toEqual({ method: 'POST', path: '/api/poll' })
 +    expect(marketRequest('candles', { category: 'SPOT', symbol: 'BTCUSDT', interval: '1H' }).path).toContain('/api/candles?category=SPOT&symbol=BTCUSDT&interval=1H')
 +    expect(marketRequest('watchlist', { items: [{ symbol: 'BTCUSDT', category: 'SPOT', token: 'ignored' }] }).body).toEqual({ items: [{ symbol: 'BTCUSDT', category: 'SPOT' }] })
++    expect(marketRequest('tracking-history', {category:'USDT-FUTURES',symbol:'ZECUSDT',before:'1000|event-01'}).path).toContain('task=USDT-FUTURES%3AZECUSDT')
++    expect(marketRequest('wechat-login')).toEqual({method:'POST',path:'/api/wechat/login'})
++    expect(marketRequest('wechat-configure',{enabled:true,cadence_hours:6}).body).toEqual({enabled:true,cadence_hours:6})
++    expect(() => marketRequest('wechat-configure',{sendkey:'secret'})).toThrow()
++    expect(() => marketRequest('wechat-login-status',{verify_code:'../../secret'})).toThrow()
++    expect(() => marketRequest('tracking-history', {category:'USDT-FUTURES',symbol:'../private'})).toThrow()
++    expect(() => marketRequest('tracking-history', {category:'USDT-FUTURES',symbol:'ZECUSDT',before:'../../secret'})).toThrow()
 +    for (const action of ['http://evil.test', '/api/secrets', 'delete', '__proto__']) expect(() => marketRequest(action)).toThrow()
 +    expect(() => marketRequest('watchlist', { items: Array(51).fill({}) })).toThrow()
 +    expect(() => marketRequest('instruments', { symbol: '../private' })).toThrow()
 +    expect(() => marketRequest('candles', { symbol: 'BTCUSDT', interval: '../secret' })).toThrow()
 +  })
++})
+diff --git a/apps/desktop/tests/terminal-agent.test.ts b/apps/desktop/tests/terminal-agent.test.ts
+new file mode 100644
+index 0000000000..2e32336b86
+--- /dev/null
++++ b/apps/desktop/tests/terminal-agent.test.ts
+@@ -0,0 +1,21 @@
++import { test } from 'node:test'
++import assert from 'node:assert/strict'
++import { agentOperation } from '../src/terminal-agent.ts'
++test('keys are write-only and unrelated operations are rejected',()=>{
++ assert.deepEqual(agentOperation('agent-key',{key:'sk-test'}),{method:'credentials/set',args:{ref:'DEEPSEEK_API_KEY',value:'sk-test'}})
++ assert.throws(()=>agentOperation('agent-key',{key:''}))
++ assert.throws(()=>agentOperation('credentials/get',{}))
++ assert.throws(()=>agentOperation('agent-send',{text:'hello'}))
++})
++test('send is pinned to the owned session with bounded text',()=>{
++ const op=agentOperation('agent-send',{text:'hello',sessionId:'other'},'owned')
++ assert.equal((op.args.request as {sessionId:string}).sessionId,'owned')
++ assert.throws(()=>agentOperation('agent-send',{text:'a'.repeat(20001)},'owned'))
++})
++
++test('complete chart is attached as a separate context block',()=>{
++ const rows=Array.from({length:300},(_,i)=>({time:i+1,open:2,high:4,low:1,close:3,volume:5}))
++ const op=agentOperation('agent-send',{text:'分析最近的量价变化',chart:{symbol:'ZECUSDT',category:'USDT-FUTURES',interval:'15m',capturedAt:1000,rows}},'owned')
++ const content=(op.args.request as {content:{text:string}[]}).content
++ assert.equal(content[0]?.text,'分析最近的量价变化');assert.ok(content[1]?.text.includes('[300,2,4,1,3,5]'));assert.ok(content[1]?.text.includes('market-context.json'))
++})
+diff --git a/apps/desktop/tests/terminal-events.test.ts b/apps/desktop/tests/terminal-events.test.ts
+new file mode 100644
+index 0000000000..7efc810e28
+--- /dev/null
++++ b/apps/desktop/tests/terminal-events.test.ts
+@@ -0,0 +1,12 @@
++import {test} from 'node:test'
++import assert from 'node:assert/strict'
++import {TerminalEvents} from '../src/terminal-events.ts'
++test('approval remains pending until explicit answer; stale and invalid decisions fail',async()=>{
++ let controller!:ReadableStreamDefaultController<Uint8Array>;const calls:unknown[]=[]
++ const stream=new ReadableStream<Uint8Array>({start(c){controller=c;c.enqueue(new TextEncoder().encode(JSON.stringify({type:'ready',clientId:'client'})+'\n'+JSON.stringify({type:'waterfall',eventId:'e',event:'approval/request',request:{toolName:'shell',reason:'test'}})+'\n'))}})
++ const events=new TerminalEvents(async()=>new Response(stream),async(m,a)=>{calls.push({m,a})})
++ await events.start();assert.equal(events.list().length,1);assert.equal(calls.length,0)
++ await assert.rejects(events.answer({eventId:'e',value:'always'}));assert.equal(calls.length,0)
++ await events.answer({eventId:'e',value:'rejected'});assert.equal(calls.length,1);assert.equal(events.list().length,0)
++ await assert.rejects(events.answer({eventId:'e',value:'allowed-once'}));controller.close()
++})
+diff --git a/apps/desktop/tests/tracking-worker.test.ts b/apps/desktop/tests/tracking-worker.test.ts
+new file mode 100644
+index 0000000000..b9df2d8c64
+--- /dev/null
++++ b/apps/desktop/tests/tracking-worker.test.ts
+@@ -0,0 +1,22 @@
++import {test} from 'node:test'
++import assert from 'node:assert/strict'
++import {buildResearchPrompt,finalResearch,parseResearch} from '../src/tracking-worker.ts'
++test('only a completed research turn is committed',()=>{
++ const message={event:{type:'assistant/message',data:{message:{content:[{type:'text',text:'{"summary":"ok"}'}]}}}}
++ assert.equal(finalResearch({records:[message]}),undefined)
++ assert.equal(finalResearch({records:[message,{event:{type:'turn/end',data:{reason:{kind:'completed'}}}}]}),'{"summary":"ok"}')
++ assert.throws(()=>finalResearch({records:[message,{event:{type:'turn/end',data:{reason:{kind:'error'}}}}]}))
++ assert.deepEqual(parseResearch('```json\n{"summary":"ok"}\n```'),{summary:'ok'})
++ assert.throws(()=>parseResearch('[]'))
++})
++test('long-term research prompt uses the five skills and role-based action schema',()=>{
++ const prompt=buildResearchPrompt({task:{symbol:'ZECUSDT'},metrics:{results:{'market-trend':{}}}})
++ for(const skill of ['market-trend','market-volume','market-s-r','market-breakout','market-exhaustion'])assert.ok(prompt.includes(skill))
++ for(const layer of ['宏观金融环境','跨资产传导','资本开支','估值和叙事','反身性与泡沫','边际变化'])assert.ok(prompt.includes(layer))
++ assert.match(prompt,/buy、hold、sell、insufficient/)
++ assert.match(prompt,/量价战术判断/)
++ assert.match(prompt,/无需等待基本面全部接入/)
++ assert.match(prompt,/probabilities/)
++ assert.match(prompt,/不要在回答中自行改写百分比/)
++ assert.match(prompt,/ZECUSDT/)
 +})

@@ -79,6 +79,9 @@ class Bitget:
     def instruments(self, category, symbol=None):
         return self._get('instruments', category, symbol)
 
+    def tickers(self, category):
+        return self._get("tickers", category)
+
     def ticker(self, category, symbol):
         rows = self._get('tickers', category, symbol)
         for row in rows:
@@ -90,6 +93,11 @@ class Bitget:
         if interval not in CHART_INTERVALS or not isinstance(limit,int) or not 1 <= limit <= 1000:
             raise ValueError('invalid_candle_parameters')
         return self._get('candles', category, symbol, interval=interval, limit=str(limit))
+
+    def history_candles(self, category, symbol, interval, end_time, limit=100):
+        if interval not in CHART_INTERVALS or not isinstance(end_time,int) or end_time<=0 or not 1<=limit<=100:
+            raise ValueError('invalid_history_parameters')
+        return self._get('history-candles',category,symbol,interval=interval,endTime=str(end_time),limit=str(limit))
 
     def close(self):
         self.client.close()
