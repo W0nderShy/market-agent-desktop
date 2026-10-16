@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="720" viewBox="0 0 1440 720" role="img" aria-labelledby="title desc">
+  <title id="title">Market Agent Desktop — continuous market research</title>
+  <desc id="desc">A dark market research workspace illustration with a candlestick chart, agent context, and a persistent research timeline.</desc>
+  <defs>
+    <linearGradient id="bg" x2="1" y2="1"><stop stop-color="#0e1822"/><stop offset="1" stop-color="#080d13"/></linearGradient>
+    <linearGradient id="panel" x2="0" y2="1"><stop stop-color="#14232d"/><stop offset="1" stop-color="#0c151e"/></linearGradient>
+    <radialGradient id="glow"><stop stop-color="#48d9b4" stop-opacity=".12"/><stop offset="1" stop-color="#48d9b4" stop-opacity="0"/></radialGradient>
+    <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse"><path d="M48 0H0V48" fill="none" stroke="#89b4c5" stroke-opacity=".035"/></pattern>
+  </defs>
+  <rect x="1" y="1" width="1438" height="718" rx="24" fill="url(#bg)" stroke="#263641"/>
+  <rect x="1" y="1" width="1438" height="718" rx="24" fill="url(#grid)"/>
+  <ellipse cx="1010" cy="350" rx="430" ry="290" fill="url(#glow)"/>
+  <g font-family="Segoe UI, Arial, sans-serif">
+    <g transform="translate(64 48)">
+      <rect width="38" height="38" rx="10" fill="#48d9b4" fill-opacity=".12" stroke="#48d9b4" stroke-opacity=".4"/>
+      <path d="M9 26V20M15 23V13M21 25V8M27 19V12" stroke="#67e7c7" stroke-width="3" stroke-linecap="round"/>
+      <text x="52" y="25" fill="#e9f1f5" font-size="21" font-weight="650" letter-spacing="1.4">MARKET AGENT DESKTOP</text>
+    </g>
+    <rect x="1210" y="51" width="166" height="31" rx="15.5" fill="#12271f" stroke="#285345"/>
+    <circle cx="1228" cy="66.5" r="3.5" fill="#67e7c7"/>
+    <text x="1241" y="72" fill="#8ee5ce" font-family="Consolas, monospace" font-size="12.5">v0.1.0-alpha.1</text>
+    <path d="M64 117H1376" stroke="#21303a"/>
+
+    <text x="64" y="178" fill="#72d8c0" font-size="13" font-weight="600" letter-spacing="3.2">CONTINUOUS MARKET RESEARCH</text>
+    <text x="60" y="259" fill="#edf4f8" font-size="61" font-weight="700" letter-spacing="-2">A workspace for</text>
+    <text x="60" y="332" fill="#edf4f8" font-size="61" font-weight="700" letter-spacing="-2">continuous</text>
+    <text x="60" y="405" fill="#67e7c7" font-size="61" font-weight="700" letter-spacing="-2">market research.</text>
+    <text x="64" y="455" fill="#9aadb9" font-size="20">Live market context. Persistent research.</text>
+    <text x="64" y="487" fill="#9aadb9" font-size="20">One desktop workspace.</text>
+    <g font-size="12" font-family="Consolas, monospace" fill="#b7c9d3">
+      <rect x="64" y="527" width="88" height="30" rx="6" fill="#121e28" stroke="#2a3d48"/><text x="83" y="547">BITGET</text>
+      <rect x="162" y="527" width="108" height="30" rx="6" fill="#121e28" stroke="#2a3d48"/><text x="181" y="547">DEEPSEEK</text>
+      <rect x="280" y="527" width="116" height="30" rx="6" fill="#121e28" stroke="#2a3d48"/><text x="298" y="547">LANGGRAPH</text>
+    </g>
+
+    <g transform="translate(664 165)">
+      <rect width="712" height="409" rx="14" fill="#0b131c" stroke="#344854"/>
+      <path d="M14 0H698Q712 0 712 14V49H0V14Q0 0 14 0Z" fill="#15212c"/>
+      <circle cx="22" cy="24" r="4" fill="#425564"/><circle cx="37" cy="24" r="4" fill="#425564"/><circle cx="52" cy="24" r="4" fill="#425564"/>
+      <g font-size="10.5" font-weight="600" letter-spacing="1.2"><text x="86" y="28" fill="#67e7c7">MARKET</text><text x="177" y="28" fill="#8297a7">AGENT</text><text x="260" y="28" fill="#8297a7">TRACKING</text></g>
+      <path d="M85 48H139" stroke="#67e7c7" stroke-width="2"/>
+      <text x="564" y="28" fill="#768c9d" font-family="Consolas, monospace" font-size="10">WORKSPACE PREVIEW</text>
+
+      <text x="23" y="86" fill="#e1eaf0" font-size="19" font-weight="650">BTCUSDT</text>
+      <rect x="135" y="71" width="52" height="20" rx="4" fill="#172733"/><text x="147" y="85" fill="#9ab0c0" font-size="10">PERP</text>
+      <text x="23" y="114" fill="#72899a" font-size="11">1m</text><text x="57" y="114" fill="#72899a" font-size="11">15m</text>
+      <rect x="92" y="100" width="28" height="21" rx="4" fill="#214137"/><text x="99" y="114" fill="#80e3c8" font-size="11">1H</text>
+      <text x="135" y="114" fill="#72899a" font-size="11">4H</text><text x="171" y="114" fill="#72899a" font-size="11">1D</text>
+      <path d="M493 49V409" stroke="#253440"/>
+      <g stroke="#273c48" stroke-opacity=".55"><path d="M23 151H471M23 203H471M23 255H471M23 307H471M75 137V320M153 137V320M231 137V320M309 137V320M387 137V320M465 137V320"/></g>
+      <g stroke="#5fd9b6" fill="#5fd9b6" stroke-width="1.4">
+        <path d="M33 281V310M47 268V296M75 246V283M89 233V264M103 219V252M131 208V240M145 192V226M159 179V210M187 188V222M215 202V232M229 189V216M243 174V203M257 159V186M285 168V199M313 183V214M327 171V199M341 154V184M355 143V170M383 157V186M411 166V197M425 150V178M439 137V162M453 128V153"/>
+        <path d="M29 287H37V302H29ZM43 276H51V290H43ZM71 252H79V274H71ZM85 243H93V257H85ZM99 226H107V247H99ZM127 216H135V231H127ZM141 201H149V220H141ZM155 187H163V205H155ZM183 196H191V211H183ZM211 211H219V224H211ZM225 197H233V213H225ZM239 181H247V199H239ZM253 168H261V182H253ZM281 175H289V188H281ZM309 193H317V204H309ZM323 179H331V193H323ZM337 162H345V179H337ZM351 150H359V165H351ZM379 165H387V177H379ZM407 174H415V188H407ZM421 157H429V172H421ZM435 144H443V158H435ZM449 135H457V148H449Z"/>
+      </g>
+      <g stroke="#e88e98" fill="#e88e98" stroke-width="1.4"><path d="M61 263V299M117 221V253M173 184V218M201 198V234M271 158V191M299 178V211M369 146V178M397 165V204"/><path d="M57 271H65V290H57ZM113 226H121V244H113ZM169 191H177V211H169ZM197 206H205V225H197ZM267 166H275V183H267ZM295 186H303V201H295ZM365 152H373V169H365ZM393 174H401V196H393Z"/></g>
+      <path d="M23 149H471" stroke="#6cdec0" stroke-dasharray="4 5" stroke-opacity=".55"/>
+      <g fill="#3d8b78" opacity=".8"><path d="M29 333H37V347H29ZM43 328H51V347H43ZM57 335H65V347H57ZM71 325H79V347H71ZM85 332H93V347H85ZM99 318H107V347H99ZM113 331H121V347H113ZM127 329H135V347H127ZM141 320H149V347H141ZM155 311H163V347H155ZM169 326H177V347H169ZM183 331H191V347H183ZM197 333H205V347H197ZM211 335H219V347H211ZM225 328H233V347H225ZM239 323H247V347H239ZM253 313H261V347H253ZM267 324H275V347H267ZM281 332H289V347H281ZM295 334H303V347H295ZM309 337H317V347H309ZM323 331H331V347H323ZM337 325H345V347H337ZM351 318H359V347H351ZM365 329H373V347H365ZM379 332H387V347H379ZM393 335H401V347H393ZM407 331H415V347H407ZM421 324H429V347H421ZM435 319H443V347H435ZM449 314H457V347H449Z"/></g>
+      <path d="M23 363H471" stroke="#253440"/>
+      <g font-size="10" font-family="Consolas, monospace"><text x="28" y="388" fill="#7fdac3">OBSERVE</text><text x="139" y="388" fill="#4d6878">→</text><text x="193" y="388" fill="#b6c7d2">REVIEW</text><text x="307" y="388" fill="#4d6878">→</text><text x="361" y="388" fill="#b6c7d2">REMEMBER</text></g>
+
+      <text x="515" y="83" fill="#dce7ed" font-size="14" font-weight="600">Research context</text><circle cx="683" cy="78" r="3" fill="#67e7c7"/>
+      <rect x="513" y="103" width="177" height="71" rx="7" fill="url(#panel)" stroke="#2b414b"/>
+      <text x="526" y="124" fill="#69d5b9" font-size="9" letter-spacing="1.5">CURRENT CHART</text><text x="526" y="149" fill="#dae6ec" font-size="14" font-weight="600">OHLCV + timeframes</text>
+      <text x="515" y="202" fill="#7892a4" font-size="10" letter-spacing="1.4">ANALYSIS SKILLS</text>
+      <g font-size="12" fill="#afc1cc"><text x="527" y="229">Volume &amp; trend</text><text x="527" y="254">Support &amp; resistance</text><text x="527" y="279">Breakout &amp; exhaustion</text></g>
+      <g fill="#67e7c7"><circle cx="516" cy="225" r="2"/><circle cx="516" cy="250" r="2"/><circle cx="516" cy="275" r="2"/></g>
+      <path d="M513 299H690" stroke="#253440"/>
+      <text x="515" y="323" fill="#7892a4" font-size="10" letter-spacing="1.4">RESEARCH MEMORY</text>
+      <path d="M519 340V383" stroke="#365448"/><circle cx="519" cy="346" r="3" fill="#67e7c7"/><circle cx="519" cy="374" r="3" fill="#365448"/>
+      <text x="532" y="350" fill="#c2d5df" font-size="11.5">Evidence → revision</text><text x="532" y="378" fill="#839aab" font-size="11.5">Pause → recover</text>
+    </g>
+    <text x="665" y="598" fill="#657d8d" font-family="Consolas, monospace" font-size="11" letter-spacing=".5">CHART CONTEXT + ANALYSIS SKILLS + RESEARCH MEMORY</text>
+    <path d="M64 630H1376" stroke="#21303a"/>
+    <g font-size="14" fill="#94a9b7"><text x="64" y="672"><tspan fill="#e1edf3" font-weight="700">5</tspan><tspan dx="9">analysis skills</tspan></text><text x="277" y="672"><tspan fill="#e1edf3" font-weight="700">6</tspan><tspan dx="9">chart intervals</tspan></text><text x="498" y="672"><tspan fill="#e1edf3" font-weight="700">MIT</tspan><tspan dx="9">licensed</tspan></text></g>
+    <text x="1376" y="672" text-anchor="end" fill="#657d8d" font-family="Consolas, monospace" font-size="12" letter-spacing="1.8">LOCAL WORKSPACE · WINDOWS</text>
+  </g>
+</svg>
